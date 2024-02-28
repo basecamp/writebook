@@ -1,5 +1,7 @@
 <h1><%= @page.title %></h1>
 
-<p><%= @page.body %></p>
+<div>
+  <%= md @page.body %>
+</div>
 
 <p><%= link_to "Edit", edit_leafable_path(@leaf) %></p>

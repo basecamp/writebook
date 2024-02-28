@@ -1,5 +1,5 @@
 <%= form_with model: [ book, page ] do |form| %>
   <%= form.text_field :title %><br>
-  <%= form.text_area :body %><br>
+  <%= form.text_area :body, data: { controller: "editor" } %><br>
   <%= form.submit "Save" %>
 <% end %>
