@@ -1,0 +1,27 @@
+<% @page_title = "Sign in" %>
+<% turbo_page_requires_reload %>
+
+<section class="txt-align-center">
+  <div class="panel <%= "shake" if flash[:alert] %>">
+    <%= form_with url: session_url, class: "flex flex-column gap" do |form| %>
+      <fieldset class="flex flex-column gap center-block upad">
+        <legend class="txt-large txt-align-center"><strong>Workbook</strong></legend>
+
+        <div class="flex align-center gap">
+          <label class="flex align-center gap input input--actor txt-large">
+            <%= form.email_field :email_address, required: true, class: "input", autofocus: true, autocomplete: "username", placeholder: "Enter your email address", value: params[:email_address] %>
+          </label>
+        </div>
+
+        <div class="flex align-center gap">
+          <label class="flex align-center gap input input--actor txt-large">
+            <%= form.password_field :password, required: true, class: "input", autocomplete: "current-password", placeholder: "Enter your password", maxlength: 72 %>
+          </label>
+        </div>
+
+        <%= form.submit "Sign in", class: "btn btn--reversed center txt-large" %>
+      </fieldset>
+    <% end %>
+  </div>
+
+</section>

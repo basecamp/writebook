@@ -1,6 +1,8 @@
 Rails.application.routes.draw do
   root "books#index"
 
+  resource :session, only: %i[ new create destroy ]
+
   resources :books do
     resources :leafs
     resources :pages
