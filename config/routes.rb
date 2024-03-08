@@ -1,6 +1,7 @@
 Rails.application.routes.draw do
   root "books#index"
 
+  resource :first_run, only: %i[ show create ]
   resource :session, only: %i[ new create destroy ]
 
   resources :books do

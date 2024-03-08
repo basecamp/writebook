@@ -1,0 +1,45 @@
+<% @page_title = "Set up Workbook" %>
+
+<%= form_with model: @user, url: first_run_path, class: "center max-width" do |form| %>
+  <section class="nametag u-relative">
+    <div class="nametag__inner flex flex-column gap">
+      <fieldset class="flex flex-column center-block">
+        <legend class="txt-large txt-align-center"><strong><%= @page_title %></strong></legend>
+
+        <label class="align-center center avatar__form gap" data-controller="upload-preview">
+          <div class="btn input--file">
+            <%= form.file_field :avatar, class: "input", accept: "image/*" %>
+            <span class="for-screen-reader">Add your avatar</span>
+          </div>
+
+          <div class="btn avatar input--file txt-xx-large">
+            <span class="for-screen-reader">Avatar</span>
+          </div>
+        </label>
+      </fieldset>
+
+      <div class="flex align-center gap">
+        <label class="flex align-center gap flex-item-grow txt-large input input--actor">
+          <%= form.text_field :name, class: "input", autocomplete: "name", placeholder: "Name", autofocus: true, required: true,
+                data: { "1p-ignore": true } %>
+        </label>
+      </div>
+
+      <div class="flex align-center gap">
+        <label class="flex align-center gap flex-item-grow txt-large input input--actor">
+          <%= form.email_field :email_address, class: "input", autocomplete: "username", placeholder: "Email address", required: true %>
+        </label>
+      </div>
+
+      <div class="flex align-center gap">
+        <label class="flex align-center gap flex-item-grow txt-large input input--actor">
+          <%= form.password_field :password, class: "input", autocomplete: "new-password", placeholder: "Password", required: true, maxlength: 72 %>
+        </label>
+      </div>
+
+      <%= form.button class: "btn btn--reversed center txt-large", type: "submit" do %>
+        <span class="for-screen-reader">Create</span>
+      <% end %>
+    </div>
+  </section>
+<% end %>
