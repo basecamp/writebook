@@ -6,7 +6,7 @@ GIT
 
 GIT
   remote: https://github.com/rails/rails.git
-  revision: c9075e3643ecaed3b053b0fe50799895b71474af
+  revision: 87bee3640b2a135a360c9af13f0e610bef8df131
   specs:
     actioncable (8.0.0.alpha)
       actionpack (= 8.0.0.alpha)
@@ -32,7 +32,6 @@ GIT
       actionview (= 8.0.0.alpha)
       activesupport (= 8.0.0.alpha)
       nokogiri (>= 1.8.5)
-      racc
       rack (>= 2.2.4)
       rack-session (>= 1.0.1)
       rack-test (>= 0.6.3)
@@ -69,14 +68,17 @@ GIT
       marcel (~> 1.0)
     activesupport (8.0.0.alpha)
       base64
+      benchmark (>= 0.3)
       bigdecimal
       concurrent-ruby (~> 1.0, >= 1.3.1)
       connection_pool (>= 2.2.5)
       drb
       i18n (>= 1.6, < 2)
-      logger
+      logger (>= 1.4.2)
       minitest (>= 5.1)
+      securerandom (>= 0.3)
       tzinfo (~> 2.0, >= 2.0.5)
+      uri (>= 0.13.1)
     rails (8.0.0.alpha)
       actioncable (= 8.0.0.alpha)
       actionmailbox (= 8.0.0.alpha)
@@ -108,6 +110,7 @@ GEM
     ast (2.4.2)
     base64 (0.2.0)
     bcrypt (3.1.20)
+    benchmark (0.3.0)
     bigdecimal (3.1.8)
     bindex (0.8.1)
     brakeman (6.2.1)
@@ -143,7 +146,7 @@ GEM
     front_matter_parser (1.0.1)
     globalid (1.2.1)
       activesupport (>= 6.1)
-    i18n (1.14.5)
+    i18n (1.14.6)
       concurrent-ruby (~> 1.0)
     image_processing (1.13.0)
       mini_magick (>= 4.9.5, < 5)
@@ -179,7 +182,7 @@ GEM
     multi_json (1.15.0)
     mustermann (3.0.0)
       ruby2_keywords (~> 0.0.1)
-    net-imap (0.4.12)
+    net-imap (0.4.16)
       date
       net-protocol
     net-pop (0.1.2)
@@ -297,6 +300,7 @@ GEM
       logger
     ruby2_keywords (0.0.5)
     rubyzip (2.3.2)
+    securerandom (0.3.1)
     selenium-webdriver (4.24.0)
       base64 (~> 0.2)
       logger (~> 1.4)
@@ -333,6 +337,7 @@ GEM
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
     unicode-display_width (2.5.0)
+    uri (0.13.1)
     web-console (4.2.1)
       actionview (>= 6.0.0)
       activemodel (>= 6.0.0)
