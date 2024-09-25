@@ -5,7 +5,7 @@ ruby file: ".ruby-version"
 gem "rails", github: "rails/rails"
 
 # Drivers
-gem "sqlite3", "~> 2.0"
+gem "sqlite3", "~> 2.1"
 gem "redis", ">= 4.0.1"
 
 # Deployment
