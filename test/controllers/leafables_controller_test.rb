@@ -12,6 +12,13 @@ class LeafablesControllerTest < ActionDispatch::IntegrationTest
     assert_select "p", "This is such a great handbook."
   end
 
+  test "show markdown" do
+    get leafable_slug_path(leaves(:welcome_page), format: "md")
+
+    assert_response :success
+    assert_equal "This is _such_ a great handbook.", @response.body
+  end
+
   test "show with public access to a published book" do
     sign_out
     books(:handbook).update!(published: true)

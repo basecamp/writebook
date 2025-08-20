@@ -12,4 +12,10 @@ class Book < ApplicationRecord
   def press(leafable, leaf_params)
     leaves.create! leaf_params.merge(leafable: leafable)
   end
+
+  def to_markdown
+    leaves.active.with_leafables.positioned \
+      .collect { |leaf| leaf.leafable.to_markdown }
+      .join("\n\n")
+  end
 end

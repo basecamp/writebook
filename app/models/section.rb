@@ -4,4 +4,8 @@ class Section < ApplicationRecord
   def searchable_content
     body
   end
+
+  def to_markdown
+    "# #{body}"
+  end
 end

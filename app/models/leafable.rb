@@ -11,7 +11,9 @@ module Leafable
   end
 
   def searchable_content
-    nil
+  end
+
+  def to_markdown
   end
 
   class_methods do

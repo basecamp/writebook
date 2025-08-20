@@ -16,6 +16,10 @@ class LeafablesController < ApplicationController
   end
 
   def show
+    respond_to do |format|
+      format.html
+      format.md { render markdown: @leaf.leafable }
+    end
   end
 
   def edit
