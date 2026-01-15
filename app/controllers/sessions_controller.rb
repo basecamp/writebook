@@ -17,8 +17,7 @@ class SessionsController < ApplicationController
   end
 
   def destroy
-    reset_authentication
-
+    terminate_current_session
     redirect_to root_url
   end
 
