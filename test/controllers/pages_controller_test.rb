@@ -12,6 +12,14 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_select "h2", text: /Hello/
   end
 
+  test "show as markdown" do
+    get leafable_path(leaves(:welcome_page), format: :md)
+
+    assert_response :ok
+    assert_includes response.body, "### Welcome to The Handbook!"
+    assert_includes response.body, "This is _such_ a great handbook."
+  end
+
   test "show sanitizes dangerous content" do
     get leafable_path(sample_page_leaf(%(<div id="test"><script>alert("ouch")</script></div>)))
 

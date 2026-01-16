@@ -16,6 +16,13 @@ class LeafablesController < ApplicationController
   end
 
   def show
+    respond_to do |format|
+      format.html
+      format.md do
+        set_active_storage_url_options
+        render plain: @leaf.to_markdown
+      end
+    end
   end
 
   def edit

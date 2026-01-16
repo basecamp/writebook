@@ -14,4 +14,8 @@ class Leaf < ApplicationRecord
   def slug
     title.parameterize.presence || "-"
   end
+
+  def to_markdown(url_options: ActiveStorage::Current.url_options)
+    leafable.to_markdown(title: title, url_options: url_options)
+  end
 end

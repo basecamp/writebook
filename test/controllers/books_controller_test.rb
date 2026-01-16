@@ -79,6 +79,19 @@ class BooksControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
   end
 
+  test "show exports markdown" do
+    get book_slug_url(books(:handbook), format: :md)
+
+    assert_response :success
+    assert_includes response.body, "# Handbook"
+    assert_includes response.body, "## The Welcome Section"
+    assert_includes response.body, "### Welcome to The Handbook!"
+    assert_includes response.body, "This is _such_ a great handbook."
+
+    url = rails_blob_url(pictures(:reading).image, host: "www.example.com")
+    assert_includes response.body, "![Reading](#{url})"
+  end
+
   test "show includes OG metadata for public access" do
     get book_slug_url(books(:handbook))
     assert_response :success

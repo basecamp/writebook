@@ -23,6 +23,14 @@ class BooksController < ApplicationController
 
   def show
     @leaves = @book.leaves.active.with_leafables.positioned
+
+    respond_to do |format|
+      format.html
+      format.md do
+        set_active_storage_url_options
+        render plain: @book.to_markdown
+      end
+    end
   end
 
   def edit
