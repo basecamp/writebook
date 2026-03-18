@@ -20,7 +20,7 @@
     outline: none;
   }
 
-  .toc__container:where(:has(#toc-list:checked)) & {
+  .toc__container:where(:has(#toc-list:checked), .toc__container--force-list) & {
     display: flex;
     flex-direction: column;
     row-gap: calc(var(--block-space) * 0.3);
@@ -250,12 +250,6 @@
 
 /* Forced view states when selector is disabled */
 .toc__container--force-list {
-  .toc {
-    display: flex;
-    flex-direction: column;
-    row-gap: calc(var(--block-space) * 0.3);
-  }
-
   .toc__leaf {
     align-items: center;
     column-gap: 1ch;
