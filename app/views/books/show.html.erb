@@ -83,13 +83,13 @@
     <div class="book__toolbar fill-white flex gap-half pad-block margin-block-end-half justify-center <%= "position-sticky" if @book.editable? %>" data-controller="toc-view" data-toc-view-id-value="<%= dom_id(@book) %>" data-toc-view-default-value="<%= @book.default_view %>">
       <% if @book.allow_view_selector? %>
         <label class="btn txt-medium disable-when-empty">
-          <input type="radio" name="view" id="toc-list" value="list" data-toc-view-target="switch" data-toc-view-type-value="list" data-action="toc-view#saveViewPref">
+          <input type="radio" name="view" id="toc-list" value="list" data-toc-view-target="switch" data-toc-view-type-value="list" data-action="toc-view#saveViewPref"<%= ' checked="checked"' if @book.default_view == 'list' %>>
           <%= image_tag "view-list.svg", aria: { hidden: true }, size: 24 %>
           <span class="for-screen-reader">List view</span>
         </label>
 
         <label class="btn txt-medium flex-item-justify-start disable-when-empty">
-          <input type="radio" name="view" id="toc-grid" value="grid" data-toc-view-target="switch" data-toc-view-type-value="grid" data-action="toc-view#saveViewPref">
+          <input type="radio" name="view" id="toc-grid" value="grid" data-toc-view-target="switch" data-toc-view-type-value="grid" data-action="toc-view#saveViewPref"<%= ' checked="checked"' if @book.default_view == 'grid' %>>
           <%= image_tag "view-grid.svg", aria: { hidden: true }, size: 24 %>
           <span class="for-screen-reader">Page view</span>
         </label>
