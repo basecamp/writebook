@@ -18,6 +18,6 @@ export default class extends Controller {
     const viewType = readCookie(id) || this.defaultValue
     this.switchTargets.forEach(switchTarget => {
       switchTarget.checked = switchTarget.dataset.tocViewTypeValue === viewType
-    }
-  )}
+    })
+  }
 }
