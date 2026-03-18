@@ -114,4 +114,49 @@ class BooksControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "link[rel=\"alternate\"][type=\"text/markdown\"][href=\"#{book_slug_path(books(:handbook), format: :md)}\"]"
   end
+
+  test "update persists view settings" do
+    book = books(:handbook)
+
+    patch book_path(book), params: { book: { default_view: "list", allow_view_selector: false } }
+
+    assert_redirected_to book_slug_path(book)
+    book.reload
+    assert_equal "list", book.default_view
+    assert_not book.allow_view_selector?
+  end
+
+  test "show hides view selector when disabled" do
+    book = books(:handbook)
+    book.update!(allow_view_selector: false)
+
+    get book_slug_path(book)
+
+    assert_response :success
+    assert_not_in_body "List view"
+    assert_not_in_body "Page view"
+    assert_not_in_body "view-list"
+    assert_not_in_body "view-grid"
+  end
+
+  test "show applies forced view class when selector is disabled" do
+    book = books(:handbook)
+    book.update!(allow_view_selector: false, default_view: "list")
+
+    get book_slug_path(book)
+
+    assert_response :success
+    assert_in_body "toc__container--force-list"
+  end
+
+  test "show shows view selector when enabled" do
+    book = books(:handbook)
+    book.update!(allow_view_selector: true)
+
+    get book_slug_path(book)
+
+    assert_response :success
+    assert_in_body "List view"
+    assert_in_body "Page view"
+  end
 end
