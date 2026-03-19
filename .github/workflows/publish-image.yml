@@ -164,7 +164,7 @@ jobs:
         shell: bash
         run: |
           set -eu
-          tags="${{ steps.meta.outputs.tags }}"
+          tags="${STEPS_META_OUTPUTS_TAGS}"
           echo "Creating manifests for tags:"
           printf '%s\n' "$tags"
           while IFS= read -r tag; do
@@ -188,6 +188,8 @@ jobs:
                 "${src_tag}-arm64"
             fi
           done <<< "$tags"
+        env:
+          STEPS_META_OUTPUTS_TAGS: ${{ steps.meta.outputs.tags }}
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@d58896d6a1865668819e1d91763c7751a165e159 # v3.9.2
@@ -196,10 +198,12 @@ jobs:
         shell: bash
         run: |
           set -eu
-          tags="${{ steps.meta.outputs.tags }}"
+          tags="${STEPS_META_OUTPUTS_TAGS}"
           printf '%s\n' "$tags"
           while IFS= read -r tag; do
             [ -z "$tag" ] && continue
             echo "Signing $tag"
             cosign sign --yes "$tag"
           done <<< "$tags"
+        env:
+          STEPS_META_OUTPUTS_TAGS: ${{ steps.meta.outputs.tags }}
