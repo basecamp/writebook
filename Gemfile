@@ -31,6 +31,7 @@ gem "rqrcode"
 gem "thruster"
 gem "useragent", github: "basecamp/useragent"
 gem "front_matter_parser"
+gem "pdf-reader", "~> 2.12"
 
 group :development, :test do
   gem "debug"

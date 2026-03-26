@@ -22,6 +22,7 @@ Rails.application.routes.draw do
   resources :books, except: %i[ index show ] do
     resource :publication, controller: "books/publications", only: %i[ show edit update ]
     resource :bookmark, controller: "books/bookmarks", only: :show
+    resource :import, controller: "books/imports", only: %i[ create ]
 
     scope module: "books" do
       namespace :leaves do

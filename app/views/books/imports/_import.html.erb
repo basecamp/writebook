@@ -1,0 +1,37 @@
+<div data-controller="dialog" data-action="keydown.esc->dialog#close">
+  <button type="button" data-action="click->dialog#open" class="btn btn--plain txt-medium fill-transparent disable-when-arranging disable-when-deleting" title="Import PDF" aria-label="Import PDF">
+    <svg viewBox="0 0 20 24" xmlns="http://www.w3.org/2000/svg" fill="var(--color-ink)">
+      <path d="m15.8 21.7c0 .3-.2.4-.4.4h-13.5-.2v-16.9c0-.3.2-.4.4-.4h6.3c0-.6.1-1.2.3-1.8h-6.9c-1 0-1.8.8-1.8 1.8v17.5c0 1 .8 1.8 1.8 1.8h14c.9 0 1.6-.6 1.8-1.4v-11.6c-.5.2-1.1.4-1.8.5v10.3z"/>
+      <path fill="var(--color-positive)" d="m15 0c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5zm.7 7.5-2 2-2-2 1-1 .4.4v-2.9h1.1v2.9l.5-.4z"/>
+      <path d="m4.5 14h9v1.5h-9zm0 3h6v1.5h-6z"/>
+    </svg>
+    <span class="for-screen-reader">Import PDF</span>
+  </button>
+
+  <dialog data-dialog-target="dialog" class="dialog panel shadow" data-controller="loading">
+    <form method="dialog">
+      <button class="btn panel__close" title="Close (esc)" data-loading-target="disable">
+        <%= image_tag "remove.svg", aria: { hidden: true }, size: 24 %>
+        <span class="for-screen-reader">Close</span>
+      </button>
+    </form>
+
+    <%= form_with url: book_import_path(book), method: :post, multipart: true, data: { turbo: false, action: "submit->loading#start" } do |form| %>
+      <div class="flex align-center gap">
+        <label class="flex align-center gap full-width">
+          <div class="flex align-center gap input input--actor">
+            <%= image_tag "file-pdf.svg", aria: { hidden: true }, size: 24, class: "colorize--black" %>
+            <span class="search__input txt-large">
+              <%= form.file_field :pdf, accept: "application/pdf", required: true, class: "input--file__input" %>
+            </span>
+          </div>
+
+          <button class="btn btn--reversed txt-medium" title="Import PDF" type="submit" data-loading-target="disable">
+            <%= image_tag "arrow-right.svg", aria: { hidden: true }, size: 24 %>
+            <span class="for-screen-reader">Import PDF</span>
+          </button>
+        </label>
+      </div>
+    <% end %>
+  </dialog>
+</div>
