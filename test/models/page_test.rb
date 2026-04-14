@@ -19,4 +19,11 @@ class PageTest < ActiveSupport::TestCase
 
     assert_equal "", page.markable
   end
+
+  test "searchable_content re-encodes HTML entities decoded by to_plain_text" do
+    page = Page.new(body: "5 < 10 & 10 > 5")
+
+    assert_includes page.searchable_content, "5 &lt; 10 &amp; 10 &gt; 5"
+    assert page.searchable_content.html_safe?
+  end
 end

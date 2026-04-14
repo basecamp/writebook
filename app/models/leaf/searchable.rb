@@ -58,15 +58,28 @@ module Leaf::Searchable
       searchable_content
     end
 
+    # Strip tags from content before indexing to keep the FTS table clean.
+    # This is a hygiene measure, not a security boundary — display-time
+    # sanitization in sanitize_search_result is the primary defense.
+    # ActionText content (Pages) is already HTML-safe plain text via
+    # ERB::Util.html_escape, so skip it to avoid double-encoding.
+    def sanitize_for_index(text)
+      if text.html_safe?
+        text
+      else
+        Rails::Html::FullSanitizer.new.sanitize(text)
+      end
+    end
+
     def create_in_search_index
       execute_sql_with_binds "insert into leaf_search_index(rowid, title, content ) values (?, ?, ?)",
-        id, title, searchable_content
+        id, sanitize_for_index(title), sanitize_for_index(searchable_content)
     end
 
     def update_in_search_index
       transaction do
         updated = execute_sql_with_binds "update leaf_search_index set title = ?, content = ? where rowid = ?",
-          title, searchable_content, id
+          sanitize_for_index(title), sanitize_for_index(searchable_content), id
 
         create_in_search_index unless updated
       end

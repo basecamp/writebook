@@ -1,6 +1,6 @@
 <%= link_to edit_leafable_path(leaf, search: params[:search]), class: "search__result hide_from_reading_mode txt-ink", data: { turbo_frame: "_top" } do %>
-  <strong><%= leaf.title_match.html_safe %>:</strong> <%= leaf.content_match.html_safe %>
+  <strong><%= sanitize_search_result(leaf.title_match) %>:</strong> <%= sanitize_search_result(leaf.content_match) %>
 <% end %>
 <%= link_to leafable_slug_path(leaf, search: params[:search]), class: "search__result hide_from_edit_mode txt-ink", data: { turbo_frame: "_top" } do %>
-  <strong><%= leaf.title_match.html_safe %>:</strong> <%= leaf.content_match.html_safe %>
+  <strong><%= sanitize_search_result(leaf.title_match) %>:</strong> <%= sanitize_search_result(leaf.content_match) %>
 <% end %>
