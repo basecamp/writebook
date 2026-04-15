@@ -110,8 +110,8 @@ GEM
   specs:
     action_text-trix (2.1.18)
       railties
-    addressable (2.8.6)
-      public_suffix (>= 2.0.2, < 6.0)
+    addressable (2.9.0)
+      public_suffix (>= 2.0.2, < 8.0)
     ast (2.4.2)
     base64 (0.3.0)
     bcrypt (3.1.22)
@@ -227,7 +227,7 @@ GEM
     psych (5.3.1)
       date
       stringio
-    public_suffix (5.0.5)
+    public_suffix (7.0.5)
     puma (6.6.0)
       nio4r (~> 2.0)
     racc (1.8.1)
