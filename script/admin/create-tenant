@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+require_relative "../../config/environment"
+
+tenant_name = ARGV[0]
+
+if tenant_name.nil? || tenant_name.empty?
+  abort "Usage: script/admin/create-tenant TENANT_NAME"
+end
+
+if ApplicationRecord.tenant_exist?(tenant_name)
+  abort "Error: Tenant '#{tenant_name}' already exists"
+end
+
+ApplicationRecord.create_tenant(tenant_name) do
+  Account.create!(name: tenant_name)
+end
+
+puts "Created tenant '#{tenant_name}'"
+puts "Visit https://#{tenant_name}.writebook.localhost:3007 to complete setup"

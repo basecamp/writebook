@@ -1,4 +1,13 @@
 GIT
+  remote: https://github.com/basecamp/activerecord-tenanted.git
+  revision: 30a888a1c890f180f7a1a92b7743c19e344536f3
+  specs:
+    activerecord-tenanted (0.6.0)
+      activerecord (>= 8.1.beta)
+      railties (>= 8.1.beta)
+      zeitwerk
+
+GIT
   remote: https://github.com/basecamp/useragent.git
   revision: 433ca320a42db1266c4b89df74d0abdb9a880c5e
   specs:
@@ -377,6 +386,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  activerecord-tenanted!
   bcrypt (~> 3.1.7)
   brakeman
   capybara

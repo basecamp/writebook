@@ -6,6 +6,7 @@ gem "rails", github: "rails/rails"
 
 # Drivers
 gem "sqlite3", "~> 2.5"
+gem "activerecord-tenanted", github: "basecamp/activerecord-tenanted"
 gem "redis", ">= 4.0.1"
 
 # Deployment

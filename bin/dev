@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
 
-echo "Starting Writebook on http://localhost:3007"
+echo "Starting Writebook on http://writebook.localhost:3007"
 
 exec ./bin/rails server -p 3007
