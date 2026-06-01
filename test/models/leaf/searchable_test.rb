@@ -37,4 +37,48 @@ class Leaf::SearchableTest < ActiveSupport::TestCase
     markup = leaves(:welcome_page).matches_for_highlight("haggis")
     assert_empty markup
   end
+
+  test "indexing sanitizes section body" do
+    section = Section.new(body: 'findme Tom & Jerry <img src=x onerror="alert(1)">')
+    books(:handbook).press(section, title: "Safe Title")
+    section.leaf.reindex
+
+    leaves = Leaf.search("findme")
+    assert_equal "<mark>findme</mark> Tom &amp; Jerry ", leaves.first.content_match
+  end
+
+  test "indexing sanitizes section title" do
+    section = Section.new(body: "findme content")
+    books(:handbook).press(section, title: 'findme Tom & Jerry <img src=x onerror="alert(1)">')
+    section.leaf.reindex
+
+    leaves = Leaf.search("findme")
+    assert_equal "<mark>findme</mark> Tom &amp; Jerry ", leaves.first.title_match
+  end
+
+  test "indexing sanitizes page body" do
+    pages(:welcome).update! body: "findme Tom & Jerry <b>bold</b>"
+
+    leaves = Leaf.search("findme")
+    assert_equal "<mark>findme</mark> Tom &amp; Jerry bold", leaves.first.content_match
+  end
+
+
+  test "indexing sanitizes page title" do
+    leaf = leaves(:welcome_page)
+    leaf.update! title: 'findme Tom & Jerry <b>bold</b>'
+    leaf.reindex
+
+    leaves = Leaf.search("findme")
+    assert_equal "<mark>findme</mark> Tom &amp; Jerry bold", leaves.first.title_match
+  end
+
+  test "indexing strips injected mark tags from title" do
+    section = Section.new(body: "findme content")
+    books(:handbook).press(section, title: 'findme <mark>fake highlight</mark>')
+    section.leaf.reindex
+
+    leaves = Leaf.search("findme")
+    assert_equal "<mark>findme</mark> fake highlight", leaves.first.title_match
+  end
 end

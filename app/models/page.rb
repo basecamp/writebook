@@ -9,7 +9,12 @@ class Page < ApplicationRecord
   has_markdown :body
 
   def searchable_content
-    plain_text
+    # `to_plain_text` decodes HTML entities, so characters like `<` that were `&lt;`
+    # in the original HTML become literal `<`. Re-encode them with `html_escape` so
+    # they are safe in the FTS index. The `html_safe` return value signals to
+    # `Leaf::Searchable#sanitize_for_index` that this content should not be
+    # double-encoded.
+    ERB::Util.html_escape(plain_text)
   end
 
   def html_preview
