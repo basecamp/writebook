@@ -5,11 +5,11 @@ ruby file: ".ruby-version"
 gem "rails", github: "rails/rails"
 
 # Drivers
-gem "sqlite3", "~> 2.5"
+gem "sqlite3", "~> 2.9"
 gem "redis", ">= 4.0.1"
 
 # Deployment
-gem "puma", ">= 5.0"
+gem "puma", "~> 7.2", ">= 7.2.1"
 
 # Jobs
 gem "resque", "~> 2.6.0"
