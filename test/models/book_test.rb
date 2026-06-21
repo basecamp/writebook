@@ -40,4 +40,15 @@ class BookTest < ActiveSupport::TestCase
   test "markable returns empty string for book with no leaves" do
     assert_equal "", books(:manual).markable
   end
+
+  test "default_view defaults to grid" do
+    book = Book.create!(title: "Test Book")
+    assert_equal "grid", book.default_view
+    assert book.grid_default_view?
+  end
+
+  test "allow_view_selector defaults to true" do
+    book = Book.create!(title: "Test Book")
+    assert book.allow_view_selector?
+  end
 end
