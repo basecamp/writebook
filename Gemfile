@@ -23,6 +23,7 @@ gem "stimulus-rails"
 
 # Other
 gem "jbuilder"
+gem "prawn", "~> 2.5"
 gem "redcarpet", "~> 3.6"
 gem "rouge", "~> 4.5"
 gem "bcrypt", "~> 3.1.7"
