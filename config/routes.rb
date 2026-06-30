@@ -36,6 +36,9 @@ Rails.application.routes.draw do
     resources :pages
   end
 
+  # PDF page size via suffix: `.pdf` defaults to Letter; `.A4.pdf`/`.letter.pdf` force a size.
+  get "/:id/:slug.:size.pdf", to: "books#show", constraints: { id: /\d+/, size: /A4|letter/i },
+    format: false, defaults: { format: "pdf" }, as: :sized_book_pdf
   get "/:id/:slug", to: "books#show", constraints: { id: /\d+/ }, as: :slugged_book
   get "/:book_id/:book_slug/:id/:slug", to: "leafables#show", constraints: { book_id: /\d+/, id: /\d+/ }, as: :slugged_leafable
 

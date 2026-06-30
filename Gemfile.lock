@@ -115,7 +115,7 @@ GEM
     ast (2.4.2)
     base64 (0.3.0)
     bcrypt (3.1.22)
-    bigdecimal (4.1.0)
+    bigdecimal (3.3.1)
     bindex (0.8.1)
     brakeman (7.0.2)
       racc
@@ -215,8 +215,13 @@ GEM
     parser (3.3.3.0)
       ast (~> 2.4.1)
       racc
+    pdf-core (0.10.0)
     pp (0.6.3)
       prettyprint
+    prawn (2.5.0)
+      matrix (~> 0.4)
+      pdf-core (~> 0.10.0)
+      ttfunk (~> 1.8)
     prettyprint (0.2.0)
     prism (1.9.0)
     propshaft (1.0.0)
@@ -347,6 +352,8 @@ GEM
     tilt (2.4.0)
     timeout (0.6.1)
     tsort (0.2.0)
+    ttfunk (1.8.0)
+      bigdecimal (~> 3.1)
     turbo-rails (2.0.11)
       actionpack (>= 6.0.0)
       railties (>= 6.0.0)
@@ -386,6 +393,7 @@ DEPENDENCIES
   image_processing (~> 1.13)
   importmap-rails
   jbuilder
+  prawn (~> 2.5)
   propshaft
   puma (~> 7.2, >= 7.2.1)
   rails!

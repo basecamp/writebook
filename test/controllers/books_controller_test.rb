@@ -114,4 +114,55 @@ class BooksControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_select "link[rel=\"alternate\"][type=\"text/markdown\"][href=\"#{book_slug_path(books(:handbook), format: :md)}\"]"
   end
+
+  test "show with pdf format returns a pdf document" do
+    leaves(:welcome_page).leafable.update!(body: "# Welcome Content")
+
+    get book_slug_path(books(:handbook), format: :pdf)
+
+    assert_response :success
+    assert_equal "application/pdf", response.media_type
+    assert response.body.start_with?("%PDF"), "expected a PDF body"
+  end
+
+  test "show includes link to pdf format" do
+    get book_slug_path(books(:handbook))
+
+    assert_response :success
+    assert_select "link[rel=\"alternate\"][type=\"application/pdf\"][href=\"#{book_slug_path(books(:handbook), format: :pdf)}\"]"
+  end
+
+  test "pdf is cacheable via conditional GET" do
+    get book_slug_path(books(:handbook), format: :pdf)
+    assert_response :success
+    assert response.etag.present?
+
+    get book_slug_path(books(:handbook), format: :pdf), headers: { "If-None-Match" => response.etag }
+    assert_response :not_modified
+  end
+
+  test "pdf is available in letter (default) and A4" do
+    book = books(:handbook)
+    paths = [
+      book_slug_path(book, format: :pdf),
+      sized_book_pdf_path(book, book.slug, "letter"),
+      sized_book_pdf_path(book, book.slug, "A4")
+    ]
+    paths.each do |path|
+      get path
+      assert_response :success, "#{path} should render a PDF"
+      assert_equal "application/pdf", response.media_type
+      assert response.body.start_with?("%PDF"), "#{path} should be a PDF"
+    end
+  end
+
+  test "editing a book busts the pdf cache" do
+    get book_slug_path(books(:handbook), format: :pdf)
+    etag = response.etag
+
+    books(:handbook).update!(title: "Renamed")
+
+    get book_slug_path(books(:handbook), format: :pdf), headers: { "If-None-Match" => etag }
+    assert_response :success
+  end
 end

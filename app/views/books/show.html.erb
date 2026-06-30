@@ -3,6 +3,7 @@
 
 <% content_for :head do %>
   <%= tag.link rel: "alternate", type: "text/markdown", href: book_slug_path(@book, format: :md) %>
+  <%= tag.link rel: "alternate", type: "application/pdf", href: book_slug_path(@book, format: :pdf) %>
   <%= tag.meta property: "og:title", content: @book.title %>
   <%= tag.meta property: "og:description", content: @book.subtitle %>
   <%= tag.meta property: "og:image", content: @book.cover.blank? ? asset_url("covers/cover-#{@book.theme}-og.png") : "#{root_url}#{url_for(@book.cover)}" %>

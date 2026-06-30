@@ -27,6 +27,14 @@ class BooksController < ApplicationController
     respond_to do |format|
       format.html
       format.md
+      format.pdf do
+        size = pdf_page_size
+        # Conditional GET: skip regeneration when the book is unchanged.
+        if stale?(etag: [ @book, size ], last_modified: @book.updated_at, public: @book.published?)
+          send_data Book::Pdf.new(@book, @leaves, page_size: size).render,
+            filename: pdf_filename(size), type: "application/pdf", disposition: "inline"
+        end
+      end
     end
   end
 
@@ -48,6 +56,15 @@ class BooksController < ApplicationController
   end
 
   private
+    # Default to US Letter; `.A4.pdf` selects A4 (`.letter.pdf` is the same as `.pdf`).
+    def pdf_page_size
+      params[:size].to_s.casecmp?("A4") ? "A4" : "LETTER"
+    end
+
+    def pdf_filename(size)
+      size == "A4" ? "#{@book.slug}.A4.pdf" : "#{@book.slug}.pdf"
+    end
+
     def set_book
       @book = Book.accessable_or_published.find params[:id]
     end
