@@ -37,6 +37,14 @@ module Writebook
     # logged-out read views.
     AUTH_LINK_PATTERN = /<a\s[^>]*href="(?:\/(?:session|users|account)|[^"]*\/edit)[^"]*"[^>]*>.*?<\/a>/m
 
+    # The search dialog's <form id="search_form"> posts to /books/:id/search,
+    # a route that exists only in the live app. On a static host it 404s into
+    # Turbo's "content missing" fallback. Neutralize the form in the export:
+    # drop its action and short-circuit submission (data-turbo="false" makes
+    # Turbo ignore the form; onsubmit="return false" cancels the native submit),
+    # so the dialog still opens for visual parity but no request ever fires.
+    SEARCH_FORM_PATTERN = /<form\s[^>]*\bid="search_form"[^>]*>/.freeze
+
     # The table-of-contents sidebar embedded in every leaf page. It is
     # byte-identical across every leaf of a book, so it is externalized once
     # per book and loaded with a small inline fetch (see +externalize_sidebar+).
@@ -45,18 +53,30 @@ module Writebook
     SIDEBAR_ASIDE_PATTERN = /<aside\s[^>]*?id="sidebar"[^>]*>.*?<\/aside>/m
 
     # The inline script that swaps the placeholder <aside> for the shared
-    # sidebar fragment. Two levels up from a leaf's
-    # <book_rel>/<leaf_id>/<leaf_slug>/index.html lands on <book_rel>/.
-    SIDEBAR_FETCH_SCRIPT = <<~JS.freeze
-      <script>
-      fetch("../../_sidebar.html").then(r=>r.text()).then(function(h){
-      var p=document.querySelector("aside[data-static-sidebar-placeholder]");
-      if(p) p.outerHTML=h;
-      }).catch(function(){});
-      </script>
-    JS
-
+    # sidebar fragment. The fetch URL is root-relative (/<book_rel>/_sidebar.html)
+    # so it resolves against the host root regardless of the leaf's URL —
+    # critically, whether or not the browser's URL carries a trailing slash.
+    # A relative "../../_sidebar.html" depends on document.baseURI, which is
+    # the no-slash URL when Turbo navigates to a leaf via a slash-less nav link,
+    # and then resolves one level too shallow and 404s. The !r.ok guard stops a
+    # 404 response body from being read as text and outerHTML'd into the page
+    # (fetch does not reject on 404; the .catch only covers network errors).
     SIDEBAR_PLACEHOLDER = '<aside id="sidebar" aria-label="Table of Contents" data-static-sidebar-placeholder></aside>'
+
+    def sidebar_fetch_script(book_rel)
+      <<~JS
+        <script>
+        fetch("/#{book_rel}/_sidebar.html").then(function(r){
+        if(!r.ok)return null;
+        return r.text();
+        }).then(function(h){
+        if(!h)return;
+        var p=document.querySelector("aside[data-static-sidebar-placeholder]");
+        if(p)p.outerHTML=h;
+        }).catch(function(){});
+        </script>
+      JS
+    end
 
     Result = Struct.new(:books, :leaves, :assets, :resources, :resource_failures, :bytes, keyword_init: true)
 
@@ -144,7 +164,7 @@ module Writebook
       end
 
       def render(rel, html)
-        html = make_relative(strip_dead_auth_links(html))
+        html = make_relative(neutralize_search_form(strip_dead_auth_links(html)))
         write(rel, html)
         @rendered << [rel, html]
         html
@@ -152,6 +172,14 @@ module Writebook
 
       def strip_dead_auth_links(html)
         html.gsub(AUTH_LINK_PATTERN, "")
+      end
+
+      def neutralize_search_form(html)
+        html.gsub(SEARCH_FORM_PATTERN) do |form|
+          form = form.sub(/\saction="[^"]*"/, "")
+          form = form.sub(/\sdata-turbo="[^"]*"/, "")
+          form.sub(/>/, ' data-turbo="false" onsubmit="return false">')
+        end
       end
 
       # Rewrite absolute URLs to the export host as root-relative so the site is
@@ -234,7 +262,7 @@ module Writebook
         write("#{book_rel}/_sidebar.html", sidebar)
         log "  externalized sidebar -> #{book_rel}/_sidebar.html (#{sidebar.bytesize} bytes)"
 
-        replacement = SIDEBAR_PLACEHOLDER + "\n" + SIDEBAR_FETCH_SCRIPT
+        replacement = SIDEBAR_PLACEHOLDER + "\n" + sidebar_fetch_script(book_rel)
         rendered_index = @rendered.to_h { |rel, html| [rel, html] }
 
         leaf_htmls.each do |rel, html|
