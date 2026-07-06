@@ -11,22 +11,51 @@ class StaticExportsController < ApplicationController
   end
 
   # Renders the published library to tmp/static-site (the same default the
-  # static:generate rake task uses) and shows the result with hosting steps.
-  # Pass include_drafts=1 to also export unpublished books (rolled back so the
-  # live database is untouched). Synchronous -- a published-only export takes
-  # seconds; operators with very large libraries should use the rake task
-  # instead (noted on the landing page) to avoid a request timeout.
+  # static:generate rake task uses) and redirects to #result, which shows the
+  # result with hosting steps. Pass include_drafts=1 to also export unpublished
+  # books (rolled back so the live database is untouched). Synchronous -- a
+  # published-only export takes seconds; operators with very large libraries
+  # should use the rake task instead (noted on the landing page) to avoid a
+  # request timeout.
+  #
+  # The redirect (PRG) is required because the landing form is Turbo-driven:
+  # a Turbo form submission must receive a 3xx redirect. A 200 HTML response
+  # (the former `render :create`) makes Turbo throw "Form responses must
+  # redirect to another location". The result is stashed in the session and
+  # rendered by the GET #result action, so the URL is also refresh-safe.
   def create
-    @output_dir = static_dir.expand_path
     include_drafts = params[:include_drafts] == "1"
 
     # Nothing to render: the library root itself redirects when there are no
     # published books, so short-circuit before the exporter would hit that.
     # (With drafts requested, an empty library -- no books at all -- is the same.)
     if include_drafts ? Book.none? : Book.published.none?
+      session[:static_export_result] = { "empty" => true }
+    else
+      result = generate(include_drafts: include_drafts)
+      session[:static_export_result] = result.to_h.transform_keys(&:to_s)
+    end
+
+    redirect_to static_export_result_url, status: :see_other
+  end
+
+  # GET: renders the result page stashed by #create. Refresh-safe -- the URL
+  # stays valid until another export overwrites the session slot. A direct hit
+  # with no stashed result (e.g. the session expired) falls back to the
+  # landing page so the operator is never left on a dead URL.
+  def result
+    data = session[:static_export_result]
+    if data.blank?
+      redirect_to static_export_url, status: :see_other
+      return
+    end
+
+    session.delete(:static_export_result)
+    @output_dir = static_dir.expand_path
+    if data["empty"]
       render :empty
     else
-      @result = generate(include_drafts: include_drafts)
+      @result = Writebook::StaticExporter::Result.new(**data.symbolize_keys)
       render :create
     end
   end

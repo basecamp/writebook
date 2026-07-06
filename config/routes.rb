@@ -25,6 +25,7 @@ Rails.application.routes.draw do
   # generated site as a .zip; #preview serves it from inside the app under
   # /static-site/ so the operator can see it in a browser tab.
   resource :static_export, only: %i[ show create ], controller: "static_exports"
+  get "/static_export/result", to: "static_exports#result", as: :static_export_result
   get "/static_export/download", to: "static_exports#download", as: :static_export_download
   get "/static-site/(*path)", to: "static_exports#preview", as: :static_site_preview, defaults: { path: "index.html" }
 

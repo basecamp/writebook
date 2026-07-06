@@ -35,6 +35,9 @@ class StaticExportsControllerTest < ActionDispatch::IntegrationTest
 
     get static_site_preview_url
     assert_response :forbidden
+
+    get static_export_result_url
+    assert_response :forbidden
   end
 
   test "download and preview require authentication" do
@@ -68,6 +71,8 @@ class StaticExportsControllerTest < ActionDispatch::IntegrationTest
     Book.update_all(published: false)
 
     post static_export_url
+    assert_redirected_to static_export_result_url
+    follow_redirect!
     assert_response :ok
     assert_match "Nothing to export", response.body
     assert_no_match "Your static site is ready", response.body
@@ -78,6 +83,8 @@ class StaticExportsControllerTest < ActionDispatch::IntegrationTest
     Book.destroy_all
 
     post static_export_url, params: { include_drafts: "1" }
+    assert_redirected_to static_export_result_url
+    follow_redirect!
     assert_response :ok
     assert_match "Nothing to export", response.body
   end
@@ -87,6 +94,8 @@ class StaticExportsControllerTest < ActionDispatch::IntegrationTest
     books(:handbook).update!(published: false) # nothing published; handbook is now a draft
 
     post static_export_url, params: { include_drafts: "1" }
+    assert_redirected_to static_export_result_url
+    follow_redirect!
     assert_response :ok
     assert_match "Your static site is ready", response.body
 
@@ -112,6 +121,8 @@ class StaticExportsControllerTest < ActionDispatch::IntegrationTest
     sign_in :david
 
     post static_export_url
+    assert_redirected_to static_export_result_url
+    follow_redirect!
     assert_response :ok
 
     dir = Rails.root.join("tmp/static-site")
@@ -128,5 +139,17 @@ class StaticExportsControllerTest < ActionDispatch::IntegrationTest
 
     assert_match "Your static site is ready", @response.body
     assert_match "Preview locally", @response.body
+  end
+
+  test "admin result without a stashed export falls back to the landing page" do
+    sign_in :david
+
+    get static_export_result_url
+    assert_redirected_to static_export_url
+  end
+
+  test "result requires authentication" do
+    get static_export_result_url
+    assert_redirected_to new_session_url
   end
 end
