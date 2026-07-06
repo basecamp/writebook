@@ -89,7 +89,7 @@ python3 -m http.server 8080</code></pre>
       <%= image_tag "arrow-left.svg", aria: { hidden: true }, size: 24 %>
       <span>Back to library</span>
     <% end %>
-    <%= button_to static_export_path, method: :post, class: "btn" do %>
+    <%= button_to static_export_path, method: :post, class: "btn", data: { turbo_submits_with: "Generating…" } do %>
       <%= image_tag "refresh.svg", aria: { hidden: true }, size: 24 %>
       <span>Generate again</span>
     <% end %>

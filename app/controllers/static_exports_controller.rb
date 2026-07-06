@@ -12,18 +12,21 @@ class StaticExportsController < ApplicationController
 
   # Renders the published library to tmp/static-site (the same default the
   # static:generate rake task uses) and shows the result with hosting steps.
-  # Synchronous -- Writebook runs no background jobs, and a published-only
-  # export takes seconds. Operators with very large libraries should use the
-  # rake task instead (noted on the result page) to avoid a request timeout.
+  # Pass include_drafts=1 to also export unpublished books (rolled back so the
+  # live database is untouched). Synchronous -- a published-only export takes
+  # seconds; operators with very large libraries should use the rake task
+  # instead (noted on the landing page) to avoid a request timeout.
   def create
     @output_dir = static_dir.expand_path
+    include_drafts = params[:include_drafts] == "1"
 
     # Nothing to render: the library root itself redirects when there are no
     # published books, so short-circuit before the exporter would hit that.
-    if Book.published.none?
+    # (With drafts requested, an empty library -- no books at all -- is the same.)
+    if include_drafts ? Book.none? : Book.published.none?
       render :empty
     else
-      @result = generate
+      @result = generate(include_drafts: include_drafts)
       render :create
     end
   end
@@ -59,12 +62,39 @@ class StaticExportsController < ApplicationController
       Rails.root.join("tmp/static-site")
     end
 
-    def generate
-      Writebook::StaticExporter.new(
-        static_dir,
-        host: request.host,
-        protocol: request.ssl? ? "https" : "http"
-      ).call
+    # Runs the exporter. The work is done in a separate thread wrapped in the
+    # Rails executor: the exporter renders every page through a nested
+    # ActionDispatch::Integration::Session, which re-enters the middleware
+    # stack and resets ActiveSupport::CurrentAttributes. Running that nested
+    # session inside the live request's thread would wipe the request's own
+    # Current (and break the layout's `signed_in?`), so it runs in a thread
+    # with its own CurrentAttributes scope instead. The thread is joined so the
+    # request still returns the result synchronously.
+    #
+    # When include_drafts is set, unpublished books are temporarily published
+    # inside a rolled-back transaction so the exporter renders them and the live
+    # database is left untouched -- the same approach as `bin/rails static:generate
+    # STATIC_ALL=1`.
+    def generate(include_drafts: false)
+      host = request.host
+      protocol = request.ssl? ? "https" : "http"
+      exporter = -> { Writebook::StaticExporter.new(static_dir, host: host, protocol: protocol).call }
+
+      result = nil
+      Thread.new do
+        Rails.application.executor.wrap do
+          if include_drafts
+            Book.transaction do
+              Book.where(published: [false, nil]).update_all(published: true)
+              result = exporter.call
+              raise ActiveRecord::Rollback
+            end
+          else
+            result = exporter.call
+          end
+        end
+      end.join
+      result
     end
 
     # Build the static site only when it isn't already on disk, so a direct hit

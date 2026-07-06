@@ -73,6 +73,32 @@ class StaticExportsControllerTest < ActionDispatch::IntegrationTest
     assert_no_match "Your static site is ready", response.body
   end
 
+  test "admin create with no books at all renders empty even with drafts requested" do
+    sign_in :david
+    Book.destroy_all
+
+    post static_export_url, params: { include_drafts: "1" }
+    assert_response :ok
+    assert_match "Nothing to export", response.body
+  end
+
+  test "admin create with drafts exports unpublished books and leaves the DB untouched" do
+    sign_in :david
+    books(:handbook).update!(published: false) # nothing published; handbook is now a draft
+
+    post static_export_url, params: { include_drafts: "1" }
+    assert_response :ok
+    assert_match "Your static site is ready", response.body
+
+    dir = Rails.root.join("tmp/static-site")
+    book = books(:handbook)
+    assert File.exist?(dir.join(book.id.to_s, book.slug, "index.html")),
+      "the unpublished draft should have been exported"
+
+    assert_equal false, Book.find(book.id).published,
+      "the live database must be left untouched (draft still unpublished after rollback)"
+  end
+
   test "admin show renders the landing page" do
     sign_in :david
     assert users(:david).administrator?
