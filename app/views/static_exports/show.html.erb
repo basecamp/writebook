@@ -1,0 +1,45 @@
+<% content_for(:title) { "Export to static site" } %>
+
+<% content_for :header do %>
+  <nav>
+    <%= link_to root_path, class: "btn" do %>
+      <%= image_tag "arrow-left.svg", aria: { hidden: true }, size: 24 %>
+      <span class="for-screen-reader">Go back</span>
+    <% end %>
+
+    <div class="breadcrumbs">
+      <%= render "books/index_link" %>
+      <span class="flex-item-no-shrink">▸</span>
+      <strong>Export to static site</strong>
+    </div>
+  </nav>
+<% end %>
+
+<div class="panel borderless center pad fill-shade flex flex-column margin-block gap">
+  <h1 class="txt-large--responsive">Export to a static site</h1>
+
+  <p class="txt-medium--responsive">
+    Generate a self-contained HTML version of your published library — the menu of
+    books, every book's table of contents, and every page — with all CSS, JavaScript,
+    and image files copied in. No Rails process, login, or editing machinery: the
+    result can be hosted anywhere.
+  </p>
+
+  <%= button_to static_export_path, method: :post, class: "btn btn--reversed center txt-medium" do %>
+    <%= image_tag "download.svg", aria: { hidden: true }, size: 24 %>
+    <span>Generate static site</span>
+  <% end %>
+</div>
+
+<div class="panel borderless center pad fill-none flex flex-column gap txt-subtle txt-medium--responsive">
+  <p class="margin-block-none">Only <strong>published</strong> books are included.</p>
+  <p class="margin-block-none">
+    To include unpublished drafts as well, run
+    <code>bin/rails static:generate STATIC_ALL=1</code> from the server shell — it
+    leaves your live database untouched.
+  </p>
+  <p class="margin-block-none">
+    For very large libraries, prefer that rake task too: it avoids holding a single
+    web request open while the whole library renders.
+  </p>
+</div>

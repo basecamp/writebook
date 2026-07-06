@@ -19,6 +19,11 @@ Rails.application.routes.draw do
     end
   end
 
+  # Generate a self-contained static HTML version of the published library.
+  # Admin-only (see StaticExportsController); the result page tells the
+  # operator where the files are and how to host them.
+  resource :static_export, only: %i[ show create ], controller: "static_exports"
+
   resources :books, except: %i[ index show ] do
     resource :publication, controller: "books/publications", only: %i[ show edit update ]
     resource :bookmark, controller: "books/bookmarks", only: :show

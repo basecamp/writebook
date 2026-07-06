@@ -1,0 +1,82 @@
+<% content_for(:title) { "Static site ready" } %>
+
+<% content_for :header do %>
+  <nav>
+    <%= link_to root_path, class: "btn" do %>
+      <%= image_tag "arrow-left.svg", aria: { hidden: true }, size: 24 %>
+      <span class="for-screen-reader">Go back</span>
+    <% end %>
+
+    <div class="breadcrumbs">
+      <%= render "books/index_link" %>
+      <span class="flex-item-no-shrink">▸</span>
+      <%= link_to "Export to static site", static_export_path %>
+      <span class="flex-item-no-shrink">▸</span>
+      <strong>Result</strong>
+    </div>
+  </nav>
+<% end %>
+
+<div class="panel borderless center pad fill-shade flex flex-column margin-block gap">
+  <h1 class="txt-large--responsive">Your static site is ready</h1>
+
+  <p class="txt-medium--responsive">
+    Rendered <strong><%= pluralize(@result.books, "book") %></strong>,
+    <strong><%= pluralize(@result.leaves, "page") %></strong>,
+    <%= pluralize(@result.assets, "asset file") %>, and
+    <%= pluralize(@result.resources, "image") %>
+    (<strong><%= @result.bytes %></strong>).
+    <% if @result.resource_failures.to_i.positive? %>
+      <strong><%= @result.resource_failures %> image(s) could not be copied — see the server log.</strong>
+    <% end %>
+  </p>
+
+  <%= button_to static_export_path, method: :post, class: "btn btn--reversed center txt-medium" do %>
+    <%= image_tag "refresh.svg", aria: { hidden: true }, size: 24 %>
+    <span>Generate again</span>
+  <% end %>
+</div>
+
+<div class="panel borderless center pad fill-none flex flex-column gap txt-medium--responsive">
+  <div>
+    <h2 class="txt-medium margin-block-end-half">Where it is</h2>
+    <p class="margin-block-none txt-subtle">
+      On this server: <code><%= @output_dir %></code>
+    </p>
+  </div>
+
+  <div>
+    <h2 class="txt-medium margin-block-end-half">Preview locally</h2>
+    <pre class="margin-block-none"><code>cd <%= @output_dir %>
+python3 -m http.server 8080</code></pre>
+    <p class="margin-block-none txt-subtle">Then open <code>http://localhost:8080</code>.</p>
+  </div>
+
+  <div>
+    <h2 class="txt-medium margin-block-end-half">Deploy it</h2>
+    <p class="margin-block-none">
+      Copy the <em>contents</em> of that directory to any static host — Netlify,
+      Cloudflare Pages, GitHub Pages, an S3 bucket, or your own nginx. URLs are
+      root-relative, so the site works at any domain's root with no extra config.
+    </p>
+  </div>
+
+  <div>
+    <h2 class="txt-medium margin-block-end-half">Including drafts, or very large libraries</h2>
+    <p class="margin-block-none txt-subtle">
+      Only published books are exported here. To include unpublished drafts, or to
+      export without holding a web request open, run
+      <code>bin/rails static:generate STATIC_ALL=1</code> from the server shell —
+      it leaves your live database untouched.
+    </p>
+  </div>
+</div>
+
+<% content_for :footer do %>
+  <nav class="flex align-center justify-center gap">
+    <%= link_to root_path, class: "btn" do %>
+      <%= image_tag "arrow-left.svg", aria: { hidden: true }, size: 24 %>
+      <span>Back to library</span>
+    <% end %>
+  </nav>
+<% end %>
