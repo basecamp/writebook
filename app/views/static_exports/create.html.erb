@@ -26,15 +26,26 @@
     <%= pluralize(@result.assets, "asset file") %>, and
     <%= pluralize(@result.resources, "image") %>
     (<strong><%= @result.bytes %></strong>).
-    <% if @result.resource_failures.to_i.positive? %>
-      <strong><%= @result.resource_failures %> image(s) could not be copied — see the server log.</strong>
-    <% end %>
   </p>
 
-  <%= button_to static_export_path, method: :post, class: "btn btn--reversed center txt-medium" do %>
-    <%= image_tag "refresh.svg", aria: { hidden: true }, size: 24 %>
-    <span>Generate again</span>
+  <% if @result.resource_failures.to_i.positive? %>
+    <p class="txt-medium--responsive">
+      <strong><%= pluralize(@result.resource_failures, "image") %> couldn't be copied.</strong>
+      The site is still usable, but those images will be missing where they're
+      referenced. Details are in the server log.
+    </p>
   <% end %>
+
+  <div class="flex align-center justify-center gap">
+    <%= link_to static_export_download_path, class: "btn btn--reversed txt-medium", data: { turbo: false } do %>
+      <%= image_tag "download.svg", aria: { hidden: true }, size: 24 %>
+      <span>Download .zip</span>
+    <% end %>
+    <%= link_to static_site_preview_path, class: "btn txt-medium", target: "_blank" do %>
+      <%= image_tag "eye.svg", aria: { hidden: true }, size: 24 %>
+      <span>Preview site</span>
+    <% end %>
+  </div>
 </div>
 
 <div class="panel borderless center pad fill-none flex flex-column gap txt-medium--responsive">
@@ -77,6 +88,10 @@ python3 -m http.server 8080</code></pre>
     <%= link_to root_path, class: "btn" do %>
       <%= image_tag "arrow-left.svg", aria: { hidden: true }, size: 24 %>
       <span>Back to library</span>
+    <% end %>
+    <%= button_to static_export_path, method: :post, class: "btn" do %>
+      <%= image_tag "refresh.svg", aria: { hidden: true }, size: 24 %>
+      <span>Generate again</span>
     <% end %>
   </nav>
 <% end %>

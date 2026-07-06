@@ -29,6 +29,48 @@ class StaticExportsControllerTest < ActionDispatch::IntegrationTest
 
     post static_export_url
     assert_response :forbidden
+
+    get static_export_download_url
+    assert_response :forbidden
+
+    get static_site_preview_url
+    assert_response :forbidden
+  end
+
+  test "download and preview require authentication" do
+    get static_export_download_url
+    assert_redirected_to new_session_url
+
+    get static_site_preview_url
+    assert_redirected_to new_session_url
+  end
+
+  test "admin download streams a zip of the generated site" do
+    sign_in :david
+
+    get static_export_download_url
+    assert_response :ok
+    assert_match %r{application/zip}, response.content_type.to_s
+    assert_match "PK", response.body # local-part of a zip file
+  end
+
+  test "admin preview serves the generated index" do
+    sign_in :david
+
+    get static_site_preview_url
+    assert_response :ok
+    assert_match %r{text/html}, response.content_type.to_s
+    assert_match books(:handbook).title, response.body
+  end
+
+  test "admin create with no published books renders the nothing-to-export page" do
+    sign_in :david
+    Book.update_all(published: false)
+
+    post static_export_url
+    assert_response :ok
+    assert_match "Nothing to export", response.body
+    assert_no_match "Your static site is ready", response.body
   end
 
   test "admin show renders the landing page" do
