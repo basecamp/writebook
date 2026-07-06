@@ -26,6 +26,12 @@
   </p>
 
   <%= form_with url: static_export_path, method: :post, class: "flex flex-column align-center gap" do %>
+    <label class="flex flex-column align-center gap txt-medium--responsive">
+      <span>Which book to export</span>
+      <%= select_tag :book_id,
+            options_for_select([["All published books", ""]] + @books.map { |book| [book.title, book.id] }) %>
+    </label>
+
     <label class="flex align-center gap txt-medium--responsive">
       <%= check_box_tag :include_drafts, "1", false %>
       Include unpublished drafts
@@ -39,9 +45,12 @@
 
 <div class="panel borderless center pad fill-none flex flex-column gap txt-subtle txt-medium--responsive">
   <p class="margin-block-none">
-    By default only <strong>published</strong> books are included. Check the box
-    above to include unpublished drafts too — your live database is left untouched
-    (the change is rolled back the moment the export finishes).
+    Pick <strong>All published books</strong> to export the whole library, or pick a
+    single book to export just that one — handy for sharing or hosting one title at a
+    time. A single book is exported whether or not it's published; the
+    <strong>Include unpublished drafts</strong> box only applies when exporting all
+    books. Your live database is left untouched either way (the change is rolled back
+    the moment the export finishes).
   </p>
   <p class="margin-block-none">
     For a very large library, generating from the browser may time out; in that case

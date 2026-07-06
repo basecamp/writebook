@@ -57,8 +57,14 @@ all books, every page, all CSS/JS and image files copied in, no login or editing
 machinery.
 
 **From the admin UI:** an admin-only **Export to static site** button in the
-library header runs the export and shows a result page with the file counts and
-what to do next (where the files are, how to preview locally, how to deploy).
+library header opens a landing page where you pick a scope — **all published
+books** (optionally including unpublished drafts) or **a single book** to export
+by itself. It runs the export and shows a result page with the file counts and
+what to do next (where the files are, how to preview locally, how to deploy),
+plus a **Download .zip** button (`writebook-static-site.zip`, or
+`writebook-<slug>.zip` for a single book) and a **Preview site** button. The
+live database is never touched — the export runs inside a rolled-back
+transaction.
 
 **From the command line:**
 

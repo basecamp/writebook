@@ -16,9 +16,17 @@ export their own books from their own Writebook.
 ### From the admin UI (synchronous)
 
 Administrators get a new **Export to static site** button (the download icon) in
-the library page header. It opens a landing page; clicking **Generate static
-site** runs the export into `tmp/static-site` and shows a result page with the
-counts and **what to do next**:
+the library page header. It opens a landing page with a selector:
+
+- **All published books** — export the whole library. Check **Include
+  unpublished drafts** to also render books that aren't published yet.
+- **A single book** — pick one title to export by itself, handy for sharing or
+  hosting one book at a time. The chosen book is exported whether or not it's
+  published; the drafts checkbox only applies to the whole-library export. The
+  generated site's library menu lists just that one book.
+
+Clicking **Generate static site** runs the export into `tmp/static-site` and
+shows a result page with the counts and **what to do next**:
 
 - where the files are on the server,
 - how to preview locally (`cd tmp/static-site && python3 -m http.server 8080`),
@@ -26,9 +34,17 @@ counts and **what to do next**:
   Cloudflare Pages, GitHub Pages, an S3 bucket, nginx); URLs are root-relative so
   the site works at any domain's root with no extra config.
 
+From there, **Download .zip** streams the generated site as a single archive
+(named `writebook-static-site.zip`, or `writebook-<slug>.zip` when you exported
+one book), and **Preview site** serves it from inside the app under
+`/static-site/` so you can see it rendered in a browser tab.
+
 The export runs synchronously. Writebook runs no background jobs, and a
 published-only export takes seconds. For very large libraries the result page
 points you at the rake task below, to avoid holding a single web request open.
+
+Either scope is rolled back the moment the export finishes, so your live
+database is never touched — the same approach the rake task uses.
 
 ### From the command line
 

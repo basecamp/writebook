@@ -152,4 +152,77 @@ class StaticExportsControllerTest < ActionDispatch::IntegrationTest
     get static_export_result_url
     assert_redirected_to new_session_url
   end
+
+  test "admin show lists every book in the selector" do
+    sign_in :david
+    get static_export_url
+    assert_response :ok
+    assert_match "All published books", @response.body
+    assert_match books(:handbook).title, @response.body
+    assert_match books(:manual).title, @response.body
+  end
+
+  test "admin create with book_id exports only that book and leaves the DB untouched" do
+    sign_in :david
+    books(:handbook).update!(published: true)
+    books(:manual).update!(published: true)
+
+    post static_export_url, params: { book_id: books(:handbook).id }
+    assert_redirected_to static_export_result_url
+    follow_redirect!
+    assert_response :ok
+    assert_match "Your static site is ready", @response.body
+    assert_match books(:handbook).title, @response.body
+
+    dir = Rails.root.join("tmp/static-site")
+    handbook = books(:handbook)
+    manual = books(:manual)
+    assert File.exist?(dir.join(handbook.id.to_s, handbook.slug, "index.html")),
+      "the chosen book should have been exported"
+    refute File.exist?(dir.join(manual.id.to_s, manual.slug, "index.html")),
+      "the other published book should have been excluded"
+
+    # The library menu shows only the chosen book.
+    index = File.read(dir.join("index.html"))
+    assert_match handbook.title, index
+    refute_match manual.title, index
+
+    # Live DB untouched: both books still published after the rollback.
+    assert_equal true, Book.find(handbook.id).published
+    assert_equal true, Book.find(manual.id).published
+  end
+
+  test "admin create with book_id exports a draft and leaves it a draft" do
+    sign_in :david
+    books(:handbook).update!(published: false) # the target is an unpublished draft
+    books(:manual).update!(published: true)    # a published book that must be hidden
+
+    post static_export_url, params: { book_id: books(:handbook).id }
+    follow_redirect!
+    assert_response :ok
+
+    dir = Rails.root.join("tmp/static-site")
+    handbook = books(:handbook)
+    manual = books(:manual)
+    assert File.exist?(dir.join(handbook.id.to_s, handbook.slug, "index.html")),
+      "the chosen draft should be exported even though it isn't published"
+    refute File.exist?(dir.join(manual.id.to_s, manual.slug, "index.html")),
+      "the other published book should have been hidden during the export"
+
+    assert_equal false, Book.find(handbook.id).published,
+      "the live database must be left untouched (target still a draft)"
+    assert_equal true, Book.find(manual.id).published,
+      "the live database must be left untouched (other book still published)"
+  end
+
+  test "admin download with book_id names the zip after the book" do
+    sign_in :david
+    books(:handbook).update!(published: true)
+
+    get static_export_download_url(book_id: books(:handbook).id)
+    assert_response :ok
+    assert_match %r{application/zip}, response.content_type.to_s
+    assert_match "writebook-#{books(:handbook).slug}.zip",
+                 response.headers["Content-Disposition"].to_s
+  end
 end

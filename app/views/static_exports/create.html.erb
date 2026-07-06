@@ -21,11 +21,19 @@
   <h1 class="txt-large--responsive">Your static site is ready</h1>
 
   <p class="txt-medium--responsive">
-    Rendered <strong><%= pluralize(@result.books, "book") %></strong>,
-    <strong><%= pluralize(@result.leaves, "page") %></strong>,
-    <%= pluralize(@result.assets, "asset file") %>, and
-    <%= pluralize(@result.resources, "image") %>
-    (<strong><%= @result.bytes %></strong>).
+    <% if @result.book_title.present? %>
+      Rendered <strong><%= @result.book_title %></strong> —
+      <strong><%= pluralize(@result.leaves, "page") %></strong>,
+      <%= pluralize(@result.assets, "asset file") %>, and
+      <%= pluralize(@result.resources, "image") %>
+      (<strong><%= @result.bytes %></strong>).
+    <% else %>
+      Rendered <strong><%= pluralize(@result.books, "book") %></strong>,
+      <strong><%= pluralize(@result.leaves, "page") %></strong>,
+      <%= pluralize(@result.assets, "asset file") %>, and
+      <%= pluralize(@result.resources, "image") %>
+      (<strong><%= @result.bytes %></strong>).
+    <% end %>
   </p>
 
   <% if @result.resource_failures.to_i.positive? %>
@@ -37,7 +45,7 @@
   <% end %>
 
   <div class="flex align-center justify-center gap">
-    <%= link_to static_export_download_path, class: "btn btn--reversed txt-medium", data: { turbo: false } do %>
+    <%= link_to static_export_download_path(book_id: @result.book_id), class: "btn btn--reversed txt-medium", data: { turbo: false } do %>
       <%= image_tag "download.svg", aria: { hidden: true }, size: 24 %>
       <span>Download .zip</span>
     <% end %>
@@ -89,7 +97,7 @@ python3 -m http.server 8080</code></pre>
       <%= image_tag "arrow-left.svg", aria: { hidden: true }, size: 24 %>
       <span>Back to library</span>
     <% end %>
-    <%= button_to static_export_path, method: :post, class: "btn", data: { turbo_submits_with: "Generating…" } do %>
+    <%= button_to static_export_path, method: :post, params: { book_id: @result.book_id }, class: "btn", data: { turbo_submits_with: "Generating…" } do %>
       <%= image_tag "refresh.svg", aria: { hidden: true }, size: 24 %>
       <span>Generate again</span>
     <% end %>

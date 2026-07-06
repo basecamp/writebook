@@ -95,7 +95,13 @@ module Writebook
       JS
     end
 
-    Result = Struct.new(:books, :leaves, :assets, :resources, :resource_failures, :bytes, keyword_init: true)
+    # +book_id+ / +book_title+ are set by the controller when a single book is
+    # exported (nil for a whole-library export) so the result and download views
+    # can name the .zip after the book and re-run the same export. The exporter
+    # itself never sets them -- it always renders whatever `Book.published`
+    # currently returns, and the controller scopes that set via a rolled-back
+    # transaction (see StaticExportsController#generate).
+    Result = Struct.new(:books, :leaves, :assets, :resources, :resource_failures, :bytes, :book_id, :book_title, keyword_init: true)
 
     def initialize(output_dir, host: "example.com", protocol: "https", verbose: false)
       @output_dir = Pathname.new(output_dir)
