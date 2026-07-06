@@ -10,8 +10,11 @@ module Writebook
   # templates already suppress every editing affordance when +book.editable?+ is
   # false, so no application code is modified. The single login affordance that
   # remains in that view -- the library's sign-in button -- is stripped from the
-  # output, since it has no destination on a static host. Absolute URLs to the
-  # export host are rewritten to be root-relative so the site is self-contained.
+  # output, since it has no destination on a static host. The search affordance,
+  # whose native backing is server-side FTS5, is rewired to a client-side index
+  # (see +wire_search_form+ and +build_search_index+) so search works with no
+  # Rails process. Absolute URLs to the export host are rewritten to be
+  # root-relative so the site is self-contained.
   #
   # Resources (compiled assets and image blobs) are resolved two ways:
   #   * In a deployed instance, +public/assets+ already holds the precompiled
@@ -37,13 +40,30 @@ module Writebook
     # logged-out read views.
     AUTH_LINK_PATTERN = /<a\s[^>]*href="(?:\/(?:session|users|account)|[^"]*\/edit)[^"]*"[^>]*>.*?<\/a>/m
 
-    # The search dialog's <form id="search_form"> posts to /books/:id/search,
-    # a route that exists only in the live app. On a static host it 404s into
-    # Turbo's "content missing" fallback. Neutralize the form in the export:
-    # drop its action and short-circuit submission (data-turbo="false" makes
-    # Turbo ignore the form; onsubmit="return false" cancels the native submit),
-    # so the dialog still opens for visual parity but no request ever fires.
+    # The search affordance -- the magnifier button plus its <dialog> modal --
+    # is rendered by app/views/books/searches/_search.html.erb into every book
+    # landing and leaf reading header. Native search is server-side: the modal's
+    # <form id="search_form"> posts to /books/:id/search, which runs SQLite FTS5
+    # full-text search (Books::SearchesController#create -> Leaf::Searchable#search
+    # -> the leaf_search_index virtual table) and returns a Turbo-frame fragment.
+    # None of that machinery exists on a static host.
+    #
+    # Rather than strip the affordance (or ship it inert), wire the existing
+    # dialog to a client-side search index: build a per-book _search.json at
+    # export time (see +build_search_index+) from the same title + plain-text
+    # body the FTS index holds, and hand the form to a Stimulus controller
+    # (app/javascript/controllers/static_search_controller.js) that fetches that
+    # index, runs an in-memory search, and renders results into the existing
+    # <turbo-frame id="search"> using the same markup the server would. The live
+    # search UI is untouched; no template changes are made -- only post-
+    # processing on the rendered HTML. See +wire_search_form+.
     SEARCH_FORM_PATTERN = /<form\s[^>]*\bid="search_form"[^>]*>/.freeze
+
+    # A leaf's static path: <book_id>/<book_slug>/<leaf_id>/<leaf_slug>/index.html.
+    # Used to tell leaf pages -- which get the destination-highlight script and
+    # whose search dialog should fetch the per-book index -- from the library
+    # index and the book tables of contents.
+    LEAF_PAGE_PATTERN = /\A\d+\/[^\/]+\/\d+\/[^\/]+\/index\.html\z/
 
     # The table-of-contents sidebar embedded in every leaf page. It is
     # byte-identical across every leaf of a book, so it is externalized once
@@ -187,7 +207,8 @@ module Writebook
       end
 
       def render(rel, html)
-        html = make_relative(neutralize_search_form(strip_dead_auth_links(html)))
+        html = make_relative(wire_search_form(strip_dead_auth_links(html), rel))
+        html = inject_destination_highlight(html) if leaf_page?(rel)
         write(rel, html)
         @rendered << [rel, html]
         html
@@ -197,12 +218,125 @@ module Writebook
         html.gsub(AUTH_LINK_PATTERN, "")
       end
 
-      def neutralize_search_form(html)
+      # Wires the existing search dialog to a client-side search index instead of
+      # the server's POST /books/:id/search, which cannot run on a static host.
+      # The dialog markup (button, <dialog>, <turbo-frame id="search">, and the
+      # empty <form id="search_form">) is left in place; only the form is touched:
+      # its dead +action+ is dropped, and it is handed to the static-search
+      # Stimulus controller (+data-controller="static-search"+) with the relative
+      # path to the per-book index (+data-static-search-index-path+). The path is
+      # RELATIVE to the page's own directory and is resolved by the controller
+      # against +location.pathname+ with the same trailing-slash normalization
+      # as +sidebar_fetch_script+, so the index resolves at a domain root and
+      # under any subpath. It is computed per page (see +search_index_path_for+)
+      # because the dialog appears at two depths: the book table of contents
+      # (<book_rel>/index.html, one level above the index) and leaf pages
+      # (<book_rel>/<leaf_id>/<leaf_slug>/index.html, two levels above). The
+      # controller fetches the index lazily on first interaction, so the per-page
+      # cost is one attribute, not the index bytes. No view template is changed.
+      def wire_search_form(html, rel)
+        path = search_index_path_for(rel)
         html.gsub(SEARCH_FORM_PATTERN) do |form|
           form = form.sub(/\saction="[^"]*"/, "")
           form = form.sub(/\sdata-turbo="[^"]*"/, "")
-          form.sub(/>/, ' data-turbo="false" onsubmit="return false">')
+          form.sub(/>/, %[ data-controller="static-search" data-static-search-index-path="#{path}">])
         end
+      end
+
+      # The relative path from a page's own directory to its book's _search.json,
+      # assuming the client normalizes location.pathname to end in "/" before
+      # resolving (as +sidebar_fetch_script+ does). The index lives at
+      # <book_rel>/_search.json; the page sits at <book_rel>/index.html (depth 0)
+      # or <book_rel>/<leaf_id>/<leaf_slug>/index.html (depth 2), so the relative
+      # climb is one "../" per directory level between the page dir and <book_rel>.
+      # Returns "../../_search.json" for leaves, "_search.json" for a book TOC.
+      def search_index_path_for(rel)
+        segments = rel.split("/")
+        book_rel = segments.first(2).join("/")
+        page_dir = rel.sub(/\/index\.html\z/, "")
+        depth = [0, page_dir.split("/").size - book_rel.split("/").size].max
+        ("../" * depth) + "_search.json"
+      end
+
+      # True for a leaf's static page (<book_id>/<book_slug>/<leaf_id>/<leaf_slug>
+      # /index.html) -- the pages that carry a body to highlight and a search
+      # dialog scoped to the book's index.
+      def leaf_page?(rel)
+        LEAF_PAGE_PATTERN.match?(rel)
+      end
+
+      # Appends the destination-highlight script to leaf pages so arriving via a
+      # search-result link (which carries ?search=<query>) wraps whole-word
+      # matches in <mark> and scrolls the first into view -- mirroring the
+      # server's highlight_searched_content + scroll_to_highlight_controller,
+      # which cannot run on a static host. The exported leaf HTML carries no
+      # baked-in marks (it is fetched without ?search=), so the script only does
+      # work when the live URL carries the query.
+      def inject_destination_highlight(html)
+        return html unless html.include?("</body>")
+        html.sub("</body>", "#{destination_highlight_script}\n</body>")
+      end
+
+      # An inline script run once on load: read ?search=, tokenize to word terms,
+      # walk the section title (<h1> in .page--section) and page body (.page--page)
+      # text nodes, wrap whole-word matches in <mark>, and scroll the first match
+      # into view. Mirrors SearchesHelper#whole_word_matchers (/\bterm\b/, longest
+      # terms first so a longer term wins before a shorter one inside it) and
+      # scroll_to_highlight_controller. No-op when ?search= is absent.
+      def destination_highlight_script
+        <<~JS
+          <script>
+          (function(){
+          var q=new URLSearchParams(location.search).get("search");
+          if(!q)return;
+          var terms=q.split(/[^0-9A-Za-z]+/).filter(Boolean).map(function(t){return t.toLowerCase();});
+          terms=terms.filter(function(t,i){return terms.indexOf(t)===i;});
+          if(!terms.length)return;
+          terms.sort(function(a,b){return b.length-a.length;});
+          var esc=function(s){return s.replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});};
+          var rx=function(s){return s.replace(/[.*+?^${}()|[\\]\\\\]/g,function(m){return "\\\\"+m;});};
+          var roots=[].slice.call(document.querySelectorAll(".page--section, .page--page"));
+          var first=null;
+          roots.forEach(function(root){
+          var tw=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:function(n){
+          if(!n.nodeValue||!n.nodeValue.trim())return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;}});
+          var nodes=[],n;while((n=tw.nextNode()))nodes.push(n);
+          nodes.forEach(function(node){
+          var text=node.nodeValue,html=esc(text),orig=html;
+          terms.forEach(function(term){var e=esc(term);html=html.replace(new RegExp("\\\\b"+rx(e)+"\\\\b","gi"),function(m){return "<mark>"+m+"</mark>";});});
+          if(html===orig)return;
+          var frag=document.createRange().createContextualFragment(html);
+          var m=frag.querySelector("mark");if(m&&!first)first=m;
+          node.parentNode.replaceChild(frag,node);
+          });
+          });
+          if(first)first.scrollIntoView({behavior:"smooth",block:"center"});
+          })();
+          </script>
+        JS
+      end
+
+      # Writes a per-book search index at <book_rel>/_search.json alongside the
+      # externalized _sidebar.html. Each entry carries the leaf's id, slug, title,
+      # its static root-relative URL, and its searchable content -- the same title
+      # + plain-text body the server's FTS index holds (Leaf#title and
+      # Leaf#searchable_content, which delegates to the leafable). The client-side
+      # static_search_controller fetches this lazily on first dialog open and
+      # builds an in-memory inverted index, so the per-page cost stays one
+      # attribute. See +wire_search_form+.
+      def build_search_index(book, book_rel, leaves)
+        return if leaves.empty?
+        write("#{book_rel}/_search.json", search_index_for(book_rel, leaves))
+        log "  wrote search index -> #{book_rel}/_search.json (#{leaves.size} leaves)" if @verbose
+      end
+
+      def search_index_for(book_rel, leaves)
+        JSON.pretty_generate(leaves.map do |leaf|
+          { id: leaf.id, slug: leaf.slug, title: leaf.title.to_s,
+            url: "/#{book_rel}/#{leaf.id}/#{leaf.slug}",
+            content: leaf.searchable_content.to_s }
+        end)
       end
 
       # Rewrite absolute URLs to the export host as root-relative so the site is
@@ -249,6 +383,7 @@ module Writebook
           end
 
           externalize_sidebar(book_rel, leaf_htmls) unless leaf_htmls.empty?
+          build_search_index(book, book_rel, leaves) unless leaf_htmls.empty?
         end
         log "Rendered #{@book_count} #{'book'.pluralize(@book_count)}, #{@leaf_count} #{'leaf'.pluralize(@leaf_count)}"
       end
@@ -276,7 +411,8 @@ module Writebook
       # every leaf of a book. Writing it once per book and loading it with a
       # tiny inline fetch turns an O(n^2) export (every leaf carries the whole
       # TOC) into O(n). With JS off the sidebar nav is absent, but the page body
-      # and prev/next navigation still work. This is the only JS the exporter
+      # and prev/next navigation still work. The destination-highlight script
+      # (+inject_destination_highlight+) is the other inline script the exporter
       # adds; everything else is Writebook's own.
       def externalize_sidebar(book_rel, leaf_htmls)
         sidebar = leaf_htmls.first.last[SIDEBAR_ASIDE_PATTERN]

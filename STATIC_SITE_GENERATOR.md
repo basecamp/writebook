@@ -137,7 +137,7 @@ The two faithful post-processing additions:
 bin/rails test
 ```
 
-All green: 171 runs, 597 assertions, 0 failures.
+All green: 186 runs, 709 assertions, 0 failures.
 
 ## Credits
 

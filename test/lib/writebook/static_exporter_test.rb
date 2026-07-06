@@ -120,6 +120,82 @@ class Writebook::StaticExporterTest < ActiveSupport::TestCase
       "leaf should not embed the inline table of contents"
   end
 
+  test "writes a per-book search index alongside the sidebar" do
+    book = books(:handbook)
+    Writebook::StaticExporter.new(@dir, host: "example.com").call
+
+    book_dir = @dir.join(book.id.to_s, book.slug)
+
+    # The per-book _search.json is written next to _sidebar.html so the client-
+    # side search controller can fetch it with the same relative path the sidebar
+    # fetch uses. It carries each leaf's id, slug, title, static URL, and the
+    # plain-text searchable content the server's FTS index holds.
+    index_file = book_dir.join("_search.json")
+    assert File.exist?(index_file), "expected a per-book search index"
+    entries = JSON.parse(index_file.read)
+    assert_kind_of Array, entries
+    assert_operator entries.size, :>, 0
+
+    entry = entries.first
+    assert_equal %w[id slug title url content].sort, entry.keys.sort
+    leaf = book.leaves.active.with_leafables.positioned.first
+    assert_equal "/#{book.id}/#{book.slug}/#{leaf.id}/#{leaf.slug}", entry["url"]
+    assert_equal leaf.title, entry["title"]
+    # Content is plain text (the FTS index source), never raw HTML or markdown
+    # front-matter.
+    assert_no_match(/<\/?\w+>/, entry["content"], "index content should be plain text")
+    assert_no_match(/\A---/, entry["content"], "index content should not carry front-matter")
+  end
+
+  test "wires the search dialog to a client-side controller instead of neutralizing it" do
+    book = books(:handbook)
+    Writebook::StaticExporter.new(@dir, host: "example.com").call
+
+    book_dir = @dir.join(book.id.to_s, book.slug)
+
+    # The search dialog is KEPT (not stripped) and its form is handed to the
+    # static-search Stimulus controller with a relative path to _search.json.
+    # The form is no longer neutralized: no dead action, no onsubmit guard.
+    leaf = book.leaves.active.with_leafables.positioned.first
+    leaf_html = book_dir.join(leaf.id.to_s, leaf.slug, "index.html").read
+    assert_includes leaf_html, %(search__modal), "search modal should be present on leaf pages"
+    assert_includes leaf_html, %(data-controller="static-search"), "form should be wired to the static-search controller"
+    assert_includes leaf_html, %(data-static-search-index-path="../../_search.json"),
+      "leaf form should point at the book index two levels up"
+    assert_no_match(/<form[^>]*id="search_form"[^>]*action=/, leaf_html,
+      "form should have no dead action")
+    assert_not_includes leaf_html, %(onsubmit="return false"), "form must not be neutralized"
+
+    # The book table of contents also carries the dialog, but one level closer
+    # to the index, so its index path is bare.
+    book_html = book_dir.join("index.html").read
+    assert_includes book_html, %(data-controller="static-search")
+    assert_includes book_html, %(data-static-search-index-path="_search.json"),
+      "book TOC form should point at the index in the same directory"
+  end
+
+  test "injects the destination-highlight script into leaf pages only" do
+    book = books(:handbook)
+    Writebook::StaticExporter.new(@dir, host: "example.com").call
+
+    book_dir = @dir.join(book.id.to_s, book.slug)
+
+    # The highlight script runs on leaf pages, reading ?search= from the URL and
+    # wrapping whole-word matches in <mark>. It must read the query param and
+    # target the section/page body containers.
+    leaf = book.leaves.active.with_leafables.positioned.first
+    leaf_html = book_dir.join(leaf.id.to_s, leaf.slug, "index.html").read
+    assert_includes leaf_html, "URLSearchParams(location.search)", "highlight script should read ?search="
+    assert_includes leaf_html, "page--section", "highlight script should target section/page containers"
+    assert_includes leaf_html, "scrollIntoView", "highlight script should scroll to the first match"
+
+    # Non-leaf pages (the book TOC) carry the search dialog but no body to
+    # highlight, so the script is not injected there.
+    book_html = book_dir.join("index.html").read
+    assert_not_includes book_html, "URLSearchParams(location.search)",
+      "highlight script should only be injected into leaf pages"
+  end
+
   test "renders the markdown alternate for each book and leaf so the alternate link resolves" do
     book = books(:handbook)
     Writebook::StaticExporter.new(@dir, host: "example.com").call
