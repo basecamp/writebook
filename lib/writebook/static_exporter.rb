@@ -53,27 +53,44 @@ module Writebook
     SIDEBAR_ASIDE_PATTERN = /<aside\s[^>]*?id="sidebar"[^>]*>.*?<\/aside>/m
 
     # The inline script that swaps the placeholder <aside> for the shared
-    # sidebar fragment. The fetch URL is root-relative (/<book_rel>/_sidebar.html)
-    # so it resolves against the host root regardless of the leaf's URL —
-    # critically, whether or not the browser's URL carries a trailing slash.
-    # A relative "../../_sidebar.html" depends on document.baseURI, which is
-    # the no-slash URL when Turbo navigates to a leaf via a slash-less nav link,
-    # and then resolves one level too shallow and 404s. The !r.ok guard stops a
-    # 404 response body from being read as text and outerHTML'd into the page
-    # (fetch does not reject on 404; the .catch only covers network errors).
+    # sidebar fragment. The fetch target is RELATIVE -- "../../_sidebar.html",
+    # resolved against the leaf's own directory -- so the same export works
+    # whether it is hosted at the domain root (a downloaded .zip uploaded
+    # straight to a static host) or under a subpath (the in-app /static-site
+    # preview, a GitHub Pages project site, any /repo/ prefix). A root-relative
+    # "/<book_rel>/_sidebar.html" would 404 under every subpath; a bare relative
+    # path depends on document.baseURI and 404s one level too shallow when the
+    # leaf URL has no trailing slash (the common case -- Turbo serves leaf links
+    # without one).
+    #
+    # The trailing-slash normalization is the crux. Forcing the pathname to end
+    # in "/" promotes the final segment from a "file" to a directory, so "../../"
+    # then climbs exactly two levels: from <leaf_slug>/ up past <leaf_id>/ to
+    # <book_rel>/, where _sidebar.html lives. The built string starts with "/",
+    # so fetch resolves it against the origin -- NOT document.baseURI -- which
+    # removes the last baseURI dependence and makes the resolution deterministic
+    # across slash/no-slash and root/subpath alike.
+    #
+    # The !r.ok guard stops a 404 response body from being read as text and
+    # outerHTML'd into the page (fetch does not reject on 404; the .catch only
+    # covers network errors).
     SIDEBAR_PLACEHOLDER = '<aside id="sidebar" aria-label="Table of Contents" data-static-sidebar-placeholder></aside>'
 
-    def sidebar_fetch_script(book_rel)
+    def sidebar_fetch_script
       <<~JS
         <script>
-        fetch("/#{book_rel}/_sidebar.html").then(function(r){
+        (function(){
+        var p=location.pathname;
+        if(!p.endsWith("/"))p+="/";
+        fetch(p+"../../_sidebar.html").then(function(r){
         if(!r.ok)return null;
         return r.text();
         }).then(function(h){
         if(!h)return;
-        var p=document.querySelector("aside[data-static-sidebar-placeholder]");
-        if(p)p.outerHTML=h;
+        var s=document.querySelector("aside[data-static-sidebar-placeholder]");
+        if(s)s.outerHTML=h;
         }).catch(function(){});
+        })();
         </script>
       JS
     end
@@ -262,7 +279,7 @@ module Writebook
         write("#{book_rel}/_sidebar.html", sidebar)
         log "  externalized sidebar -> #{book_rel}/_sidebar.html (#{sidebar.bytesize} bytes)"
 
-        replacement = SIDEBAR_PLACEHOLDER + "\n" + sidebar_fetch_script(book_rel)
+        replacement = SIDEBAR_PLACEHOLDER + "\n" + sidebar_fetch_script
         rendered_index = @rendered.to_h { |rel, html| [rel, html] }
 
         leaf_htmls.each do |rel, html|

@@ -100,13 +100,22 @@ class Writebook::StaticExporterTest < ActiveSupport::TestCase
     assert_includes sidebar_html, %(id="sidebar"), "shared sidebar should keep its aside id"
     assert_includes sidebar_html, "Summary", "shared sidebar should carry the leaf TOC links"
 
-    # Each leaf carries a placeholder and the inline fetch, not the inline TOC.
+    # Each leaf carries a placeholder and a fetch of the shared fragment, not
+    # the inline TOC. The fetch target is relative (../../_sidebar.html) and is
+    # resolved against the leaf's own directory via a pathname normalization, so
+    # the same export works at a domain root and under a subpath. A root-relative
+    # /<book>/<slug>/_sidebar.html would 404 under any subpath, so guard against
+    # regressing to that form.
     leaf = book.leaves.active.with_leafables.positioned.first
     leaf_html = book_dir.join(leaf.id.to_s, leaf.slug, "index.html").read
     assert_includes leaf_html, "data-static-sidebar-placeholder",
       "leaf should carry the sidebar placeholder"
-    assert_includes leaf_html, %(fetch("../../_sidebar.html")),
-      "leaf should fetch the shared sidebar two levels up"
+    assert_includes leaf_html, "../../_sidebar.html",
+      "leaf should fetch the shared sidebar two levels up, relative to the leaf"
+    assert_includes leaf_html, "location.pathname",
+      "leaf should normalize the pathname before resolving the relative fetch"
+    assert_not_includes leaf_html, %(fetch("/#{book.id}/#{book.slug}/_sidebar.html")),
+      "leaf must not use a root-relative sidebar fetch (breaks subpath hosting)"
     assert_not_includes leaf_html, %(<menu class="sidebar__content toc),
       "leaf should not embed the inline table of contents"
   end
