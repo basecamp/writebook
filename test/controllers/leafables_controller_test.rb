@@ -76,6 +76,16 @@ class LeafablesControllerTest < ActionDispatch::IntegrationTest
     assert_in_body "title: \"Reading\""
   end
 
+  test "show a picture whose image cannot be resized" do
+    leaves(:reading_picture).leafable.image.attach io: file_fixture("pixel.bmp").open,
+      filename: "pixel.bmp", content_type: "image/bmp"
+
+    get leafable_slug_path(leaves(:reading_picture))
+
+    assert_response :success
+    assert_select "figure img[src*=\"pixel.bmp\"]"
+  end
+
   test "show with markdown format does not escape HTML entities" do
     leaves(:welcome_page).leafable.update!(body: "This has <a href='http://example.com'>a link</a>")
 

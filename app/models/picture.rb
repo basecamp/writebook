@@ -5,6 +5,10 @@ class Picture < ApplicationRecord
     attachable.variant :large, resize_to_limit: [ 1500, 1500 ]
   end
 
+  def large_image
+    image.variable? ? image.variant(:large) : image
+  end
+
   def markable
     caption
   end

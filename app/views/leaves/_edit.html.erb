@@ -7,7 +7,7 @@
   <%= link_to leafable_path(leaf), class: "toc__thumbnail", data: { turbo_frame: "_top" } do %>
     <%= leaf.section.body if leaf.section? %>
     <%= sanitize_content(leaf.leafable.body.to_html) if leaf.page? %>
-    <%= image_tag leaf.leafable.image.variant(:large) if leaf.picture&.image&.attached? %>
+    <%= image_tag leaf.leafable.large_image if leaf.picture&.image&.attached? %>
   <% end %>
 
   <div class="toc__title flex align-center min-width">

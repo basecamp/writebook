@@ -27,7 +27,7 @@
             action: "lightbox#open:prevent",
             lightbox_target: "image",
             lightbox_url_value: rails_blob_path(@leaf.picture.image, disposition: "attachment", only_path: true) } do %>
-        <%= image_tag @leaf.picture.image.variant(:large), loading: "lazy" %>
+        <%= image_tag @leaf.picture.large_image, loading: "lazy" %>
       <% end %>
     <% else %>
       <%= image_tag "default-picture.webp", alt: "No image uploaded", loading: "lazy" %>
