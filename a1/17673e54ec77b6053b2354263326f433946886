@@ -1,0 +1,21 @@
+test/controllers/pages/edits_controller_test.rb
+  s_eba0ee92a6f828::t_d76ee5a1e8f8a3 38-81
+app/controllers/concerns/page_leaf_scoped.rb
+  s_eba0ee92a6f828::t_a23e8dcbac6a23 7-9,11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "a117673e54ec77b6053b2354263326f433946886",
+  "prompts": {},
+  "sessions": {
+    "s_eba0ee92a6f828": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "37e2bc1d-8962-4049-98cc-edf768f74dec",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Jeremy Daer <jeremy@37signals.com>"
+    }
+  }
+}
