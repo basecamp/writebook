@@ -1,0 +1,30 @@
+test/controllers/pages/edits_controller_test.rb
+  s_eba0ee92a6f828::t_8cd1b42655a293 59,65-70
+  s_0ddcb023c8f5c9::t_fab410d843bfd8 71-72
+app/controllers/pages/edits_controller.rb
+  s_eba0ee92a6f828::t_45798cd5f91052 4,11-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "b4e74b3f53ce85807a1710c6a90f42b0fd878630",
+  "prompts": {},
+  "sessions": {
+    "s_0ddcb023c8f5c9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "21a29726-b85e-40eb-8286-b0881def7ba5",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Jeremy Daer <jeremy@37signals.com>"
+    },
+    "s_eba0ee92a6f828": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "37e2bc1d-8962-4049-98cc-edf768f74dec",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Jeremy Daer <jeremy@37signals.com>"
+    }
+  }
+}
