@@ -1,0 +1,41 @@
+app/models/leafable.rb
+  s_eba0ee92a6f828::t_c254cbcfc299a5 9,14-18
+  s_ae792ed0be3006::t_cf084f96af1aef 19-20
+app/controllers/action_text/markdown/uploads_controller.rb
+  s_eba0ee92a6f828::t_c3848cc217f43d 8,10,25-40
+test/controllers/action_text/markdown/uploads_controller_test.rb
+  s_eba0ee92a6f828::t_33d04b639dfe17 23-50
+  s_eba0ee92a6f828::t_5d024cfa0648ec 96,103-116
+  s_eba0ee92a6f828::t_ddca9f4562dbfa 51-64,66-94
+  s_eba0ee92a6f828::t_08fc6e787204ce 11,95
+lib/rails_ext/action_text_markdown.rb
+  s_eba0ee92a6f828::t_6dd1e6911cf6bb 3-9
+lib/rails_ext/action_text_tag_helper.rb
+  s_eba0ee92a6f828::t_82ffa5faa8bc8d 9
+  s_eba0ee92a6f828::t_6f29a0324b035f 14-18
+  s_ae792ed0be3006::t_3a5b8ddde9d72f 19-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "f7328f72d6ce6e78785b5adaed287d3da1353578",
+  "prompts": {},
+  "sessions": {
+    "s_ae792ed0be3006": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7fd3dc2e-89cf-437b-8756-21beefe1c5f6",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Jeremy Daer <jeremy@37signals.com>"
+    },
+    "s_eba0ee92a6f828": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "37e2bc1d-8962-4049-98cc-edf768f74dec",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Jeremy Daer <jeremy@37signals.com>"
+    }
+  }
+}
