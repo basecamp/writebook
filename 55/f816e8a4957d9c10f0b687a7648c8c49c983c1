@@ -1,0 +1,22 @@
+test/controllers/action_text/markdown/uploads_controller_test.rb
+  s_eba0ee92a6f828::t_5d024cfa0648ec 96,105-143
+  s_eba0ee92a6f828::t_ef1cfc5f4cb702 144
+app/controllers/action_text/markdown/uploads_controller.rb
+  s_eba0ee92a6f828::t_c3848cc217f43d 9,22-27,46-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "55f816e8a4957d9c10f0b687a7648c8c49c983c1",
+  "prompts": {},
+  "sessions": {
+    "s_eba0ee92a6f828": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "37e2bc1d-8962-4049-98cc-edf768f74dec",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Jeremy Daer <jeremy@37signals.com>"
+    }
+  }
+}
