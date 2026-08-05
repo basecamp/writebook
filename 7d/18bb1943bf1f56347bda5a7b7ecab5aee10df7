@@ -1,0 +1,24 @@
+test/helpers/searches_helper_test.rb
+  s_ee339afe475956::t_0a678b193717c5 25-26,31,36-37,39-40,42-43,46-47,49-51,53-59
+  s_ee339afe475956::t_307fa393794cd7 29-30
+  s_ee339afe475956::t_767019e82c4085 23-24,27-28,32-35,38,41,44-45,48,52,60
+  s_ee339afe475956::t_b3d7235f2afa26 4-7
+app/helpers/searches_helper.rb
+  s_ee339afe475956::t_ef3c34dc6358b5 25-34,36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "7d18bb1943bf1f56347bda5a7b7ecab5aee10df7",
+  "prompts": {},
+  "sessions": {
+    "s_ee339afe475956": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "368afbf1-6dfe-44f3-82db-ecd9897db89b",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Jeremy Daer <jeremy@37signals.com>"
+    }
+  }
+}
