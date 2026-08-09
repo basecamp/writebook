@@ -26,7 +26,7 @@
     <link rel="apple-touch-icon" href="/app-icon.png">
 
     <%= stylesheet_link_tag :all, "data-turbo-track": "reload" %>
-    <%= custom_styles_tag %>
+    <%= tag.link rel: "stylesheet", href: account_custom_styles_path(v: Current.account&.updated_at&.to_fs(:number)), data: { turbo_track: "reload" } %>
 
     <%= javascript_importmap_tags %>
   </head>
