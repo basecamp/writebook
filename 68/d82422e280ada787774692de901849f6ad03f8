@@ -1,0 +1,24 @@
+app/views/layouts/application.html.erb
+  s_bd5219752b2e96::t_a3e2904d6311c0 29
+test/controllers/custom_styles_controller_test.rb
+  s_bd5219752b2e96::t_bb40d39c1fb5db 11,20,29,35-45
+  s_bd5219752b2e96::t_7786cfc4492ac9 46-47
+test/system/custom_styles_xss_test.rb
+  s_bd5219752b2e96::t_3133e384a8077c 1-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "68d82422e280ada787774692de901849f6ad03f8",
+  "prompts": {},
+  "sessions": {
+    "s_bd5219752b2e96": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d1c27314-93fb-458b-9a28-446b0145757d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jeremy Daer <jeremy@37signals.com>"
+    }
+  }
+}
