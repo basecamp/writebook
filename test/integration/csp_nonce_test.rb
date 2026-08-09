@@ -3,7 +3,7 @@ require "test_helper"
 class CspNonceTest < ActionDispatch::IntegrationTest
   test "policy is delivered Report-Only, not enforced" do
     sign_in :david
-    get root_url
+    get root_path
 
     assert_response :success
     assert response.headers["Content-Security-Policy-Report-Only"].present?,
@@ -15,10 +15,10 @@ class CspNonceTest < ActionDispatch::IntegrationTest
   test "nonce is stable across requests so Turbo restores don't trip CSP" do
     sign_in :david
 
-    get root_url
+    get root_path
     nonce1 = report_only_nonce
 
-    get root_url
+    get root_path
     nonce2 = report_only_nonce
 
     assert nonce1.present?, "Expected a nonce in the Report-Only CSP header"
@@ -29,7 +29,7 @@ class CspNonceTest < ActionDispatch::IntegrationTest
     fake_id = "attacker-controlled-value"
     cookies[CSP::Nonce::COOKIE] = fake_id
 
-    get root_url
+    get root_path
     nonce = report_only_nonce
 
     assert_equal CSP::Nonce.hmac(fake_id), nonce,
@@ -38,14 +38,44 @@ class CspNonceTest < ActionDispatch::IntegrationTest
 
   test "importmap script tag carries the nonce" do
     sign_in :david
-    get root_url
+    get root_path
 
     assert_response :success
     nonce = report_only_nonce
     assert_select "script[type='importmap'][nonce=?]", nonce
   end
 
+  test "a per-install ENV extra host is appended to its directive" do
+    with_env "CSP_EXTRA_FRAME_SRC" => "https://player.vimeo.com https://www.youtube.com",
+             "CSP_EXTRA_IMG_SRC"   => "https://cdn.example.test" do
+      header = ActionDispatch::ContentSecurityPolicy.new { |p| CSP.apply(p) }.build
+
+      assert_match %r{frame-src[^;]*\bhttps://player\.vimeo\.com\b}, header
+      assert_match %r{frame-src[^;]*\bhttps://www\.youtube\.com\b}, header
+      assert_match %r{img-src[^;]*\bhttps://cdn\.example\.test\b}, header
+      # :self is preserved alongside the extras.
+      assert_match %r{frame-src 'self'}, header
+    end
+  end
+
+  test "directives default to :self only when no ENV extras are set" do
+    with_env "CSP_EXTRA_FRAME_SRC" => nil, "CSP_EXTRA_IMG_SRC" => nil do
+      header = ActionDispatch::ContentSecurityPolicy.new { |p| CSP.apply(p) }.build
+
+      assert_match %r{frame-src 'self'(;|\z)}, header
+    end
+  end
+
   private
+    def with_env(vars)
+      original = {}
+      vars.each_key { |k| original[k] = ENV.key?(k) ? ENV[k] : :__unset__ }
+      vars.each { |k, v| v.nil? ? ENV.delete(k) : ENV[k] = v }
+      yield
+    ensure
+      original.each { |k, v| v == :__unset__ ? ENV.delete(k) : ENV[k] = v }
+    end
+
     def report_only_nonce
       response.headers["Content-Security-Policy-Report-Only"].to_s[/'nonce-([^']+)'/, 1]
     end
