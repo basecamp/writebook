@@ -1,0 +1,22 @@
+config/initializers/content_security_policy.rb
+  s_bd5219752b2e96::t_35dee736a2b4aa 72-79,81
+  s_bd5219752b2e96::t_d5333c1c452644 56-57
+test/integration/csp_nonce_test.rb
+  s_bd5219752b2e96::t_5729a2b1b27eea 61-81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "c8e13ba0433af7341b340826211d7c291163bea8",
+  "prompts": {},
+  "sessions": {
+    "s_bd5219752b2e96": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d1c27314-93fb-458b-9a28-446b0145757d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jeremy Daer <jeremy@37signals.com>"
+    }
+  }
+}
