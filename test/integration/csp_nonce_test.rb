@@ -79,11 +79,16 @@ class CspNonceTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "directives default to :self only when no ENV extras are set" do
+  test "directives default to :self plus the built-in embed providers when no ENV extras are set" do
     with_env "CSP_EXTRA_FRAME_SRC" => nil, "CSP_EXTRA_IMG_SRC" => nil do
       header = ActionDispatch::ContentSecurityPolicy.new { |p| CSP.apply(p) }.build
 
-      assert_match %r{frame-src 'self'(;|\z)}, header
+      # img-src has no built-in providers, so it stays at :self (+ data/blob).
+      assert_match %r{img-src 'self' data: blob:(;|\z)}, header
+      # frame-src consumes EmbedAllowlist: :self plus the shipped default provider
+      # origins, so the render-time policy agrees with the author-time scrubber.
+      assert_match %r{frame-src 'self'[^;]*\bhttps://www\.youtube\.com\b}, header
+      assert_match %r{frame-src 'self'[^;]*\bhttps://player\.vimeo\.com\b}, header
     end
   end
 

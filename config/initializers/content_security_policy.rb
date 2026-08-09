@@ -93,13 +93,114 @@ module CSP
     # and get tuned against violation reports during the report-only window.
     policy.img_src         :self, :data, :blob, *extra(:img_src)
     policy.connect_src     :self, *extra(:connect_src)
-    policy.frame_src       :self, *extra(:frame_src)
+    # frame-src is the render-time half of the iframe embed allowlist. It consumes
+    # EmbedAllowlist — the same source of truth HtmlScrubber uses at author-time —
+    # so a permitted-provider frame the scrubber keeps is one the browser will load,
+    # and the two enforcement points cannot drift. (Includes extra(:frame_src).)
+    policy.frame_src       :self, *::EmbedAllowlist.frame_src_sources
     policy.frame_ancestors :self
     policy.base_uri        :self
     policy.form_action     :self, *extra(:form_action)
     policy.object_src      :none
     # Specify URI for violation reports once a report sink is available
     # policy.report_uri "/csp-violation-report-endpoint"
+  end
+end
+
+# Single source of truth for which iframe embed providers Writebook permits.
+#
+# Consumed at two enforcement points that must never disagree:
+#   - author-time, by HtmlScrubber, which strips any <iframe> whose src host is
+#     not on this list before the page is stored/rendered; and
+#   - render-time, by the CSP frame-src directive below, which refuses to load a
+#     frame from an origin not on this list.
+# Both derive their host set from here, so an operator who adds a provider gets
+# it honored in both places from one change.
+#
+# Defined here (not app/models) because the CSP policy is built at boot, before
+# app autoloading can resolve an app/models constant; HtmlScrubber references it
+# at request time, by which point it is defined.
+#
+# ── PRODUCT DECISION ──────────────────────────────────────────────────────────
+# DEFAULT_PROVIDERS is the shipped default allowlist. Writebook is a ONCE product
+# (each customer self-hosts on their own domain), so the *mechanism* is per-
+# install configurable via the CSP_EXTRA_FRAME_SRC ENV — the same tokens CSP
+# frame-src reads. But the shipped default list below, the per-provider attribute
+# policy, and whether a raw-iframe escape hatch exists are product/authoring calls
+# an owner must confirm before this enforces. Set DEFAULT_PROVIDERS to {} to ship
+# with no built-in providers.
+module EmbedAllowlist
+  # Provider name => host matcher(s). A leading "*." matches the apex and any
+  # subdomain (e.g. "*.vimeo.com" matches "vimeo.com" and "player.vimeo.com").
+  # Product-owned default list — curate before enforcing.
+  DEFAULT_PROVIDERS = {
+    "YouTube"     => %w[ www.youtube.com youtube.com www.youtube-nocookie.com ],
+    "Vimeo"       => %w[ player.vimeo.com ],
+    "Loom"        => %w[ www.loom.com ],
+    "Google Maps" => %w[ www.google.com ]
+  }.freeze
+
+  ALLOWED_SCHEMES = %w[ https ].freeze
+
+  class << self
+    # Every host on the allowlist: the built-in defaults plus any hosts parsed
+    # out of the per-install CSP_EXTRA_FRAME_SRC ENV.
+    def hosts
+      (default_hosts + extra_hosts).uniq
+    end
+
+    # True when +src+ is an https URL whose host is on the allowlist.
+    def allows?(src)
+      uri = parse(src)
+      return false unless uri && ALLOWED_SCHEMES.include?(uri.scheme) && uri.host.present?
+
+      host = uri.host.downcase
+      hosts.any? { |pattern| host_matches?(host, pattern) }
+    end
+
+    # CSP frame-src source expressions for this same allowlist: the default
+    # provider origins as https:// URLs, plus the raw per-install extras (already
+    # CSP source expressions). Consumed by the CSP frame-src directive below so
+    # frame-src and the scrubber cannot drift.
+    def frame_src_sources
+      (default_hosts.map { |host| "https://#{host}" } + CSP.extra(:frame_src)).uniq
+    end
+
+    private
+      def default_hosts
+        DEFAULT_PROVIDERS.values.flatten
+      end
+
+      def extra_hosts
+        CSP.extra(:frame_src).filter_map { |source| host_from_source(source) }
+      end
+
+      def parse(src)
+        URI.parse(src.to_s.strip)
+      rescue URI::InvalidURIError
+        nil
+      end
+
+      def host_matches?(host, pattern)
+        pattern = pattern.downcase
+        if pattern.start_with?("*.")
+          apex = pattern.delete_prefix("*.")
+          host == apex || host.end_with?(".#{apex}")
+        else
+          host == pattern
+        end
+      end
+
+      # Extract a bare host from a CSP source expression: "https://www.youtube.com"
+      # or "https://*.vimeo.com/embed" => "www.youtube.com" / "*.vimeo.com". Returns
+      # nil for scheme-only or keyword tokens (:self, https:, 'unsafe-inline', a
+      # host:port) that carry no plain host to match an iframe src against.
+      def host_from_source(source)
+        token = source.to_s.strip.delete_prefix("https://").delete_prefix("http://")
+        token = token.split("/").first.to_s
+        return nil if token.blank? || token.include?(":") || token.start_with?("'")
+        token
+      end
   end
 end
 
