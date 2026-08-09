@@ -1,0 +1,31 @@
+test/models/html_scrubber_test.rb
+  s_9a5312b5647acb::t_0e49a3dd2b730b 1-73
+test/controllers/pages_controller_test.rb
+  s_9a5312b5647acb::t_6346eeddfd7c57 27,30-37
+app/models/html_scrubber.rb
+  s_9a5312b5647acb::t_dd79fa6a9e1dcf 2-13,20-63
+config/initializers/content_security_policy.rb
+  s_9a5312b5647acb::t_d4d6c6255e0e3d 96-99
+  s_9a5312b5647acb::t_36fe150e6e10da 100
+  s_9a5312b5647acb::t_fab3545ed42501 110-206
+test/integration/csp_nonce_test.rb
+  s_9a5312b5647acb::t_3835034fb62bea 82,86-91
+test/models/embed_allowlist_test.rb
+  s_9a5312b5647acb::t_6b17415ceae5ab 1-63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "de14d6d3d34636164c63b557d8a2dae6c2d2a6d6",
+  "prompts": {},
+  "sessions": {
+    "s_9a5312b5647acb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a7324223-7aec-44aa-ada1-8cf27519ffe6",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Jeremy Daer <jeremy@37signals.com>"
+    }
+  }
+}
