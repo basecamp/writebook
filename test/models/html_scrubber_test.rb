@@ -50,6 +50,16 @@ class HtmlScrubberTest < ActiveSupport::TestCase
     assert_not_includes out, "microphone"
   end
 
+  test "keeps an authored allowlist on a surviving allow directive" do
+    html = %(<iframe src="https://www.youtube.com/embed/x" allow="autoplay 'none'; clipboard-write https://other.example; camera *"></iframe>)
+    out  = scrub(html)
+
+    # Truncating `autoplay 'none'` to `autoplay` would grant what the author withheld.
+    assert_includes out, "autoplay 'none'"
+    assert_includes out, "clipboard-write https://other.example"
+    assert_not_includes out, "camera"
+  end
+
   test "honors a per-install ENV provider" do
     with_env "CSP_EXTRA_FRAME_SRC" => "https://maps.example.test" do
       out = scrub(%(<iframe src="https://maps.example.test/embed"></iframe>))

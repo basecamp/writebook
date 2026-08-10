@@ -38,9 +38,23 @@ class EmbedAllowlistTest < ActiveSupport::TestCase
 
   test "wildcard ENV hosts match the apex and any subdomain" do
     with_env "CSP_EXTRA_FRAME_SRC" => "https://*.example.test" do
-      assert EmbedAllowlist.allows?("https://example.test/x")
+      assert EmbedAllowlist.allows?("https://sub.example.test/x")
       assert EmbedAllowlist.allows?("https://deep.sub.example.test/x")
+      # CSP host-source semantics: *.example.test covers subdomains, not the apex.
+      assert_not EmbedAllowlist.allows?("https://example.test/x")
       assert_not EmbedAllowlist.allows?("https://example.test.evil.com/x")
+    end
+  end
+
+  test "sources narrower than a plain origin feed CSP only, never the scrubber" do
+    with_env "CSP_EXTRA_FRAME_SRC" => "https://example.test/approved/ https://ported.example.test:8443" do
+      # Dropping the path or port would let the scrubber accept more than the
+      # CSP source allows, so these admit no iframes at all.
+      assert_not EmbedAllowlist.allows?("https://example.test/approved/x")
+      assert_not EmbedAllowlist.allows?("https://example.test/unapproved")
+      assert_not EmbedAllowlist.allows?("https://ported.example.test/x")
+      # They still pass through to frame-src verbatim.
+      assert_includes EmbedAllowlist.frame_src_sources, "https://example.test/approved/"
     end
   end
 

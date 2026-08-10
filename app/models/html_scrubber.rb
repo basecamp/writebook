@@ -54,10 +54,13 @@ class HtmlScrubber < Rails::Html::PermitScrubber
       end
     end
 
+    # Keep the whole directive, not just its feature name: `autoplay 'none'`
+    # truncated to `autoplay` would grant a capability the author explicitly
+    # withheld.
     def filtered_allow(value)
       value.to_s.split(";")
-        .map { |directive| directive.strip.split(/\s+/).first.to_s.downcase }
-        .select { |token| IFRAME_ALLOW_TOKENS.include?(token) }
+        .map { |directive| directive.strip }
+        .select { |directive| IFRAME_ALLOW_TOKENS.include?(directive.split(/\s+/).first.to_s.downcase) }
         .uniq
         .join("; ")
     end

@@ -110,10 +110,11 @@ end
 # Single source of truth for which iframe embed providers Writebook permits.
 #
 # Consumed at two enforcement points that must never disagree:
-#   - author-time, by HtmlScrubber, which strips any <iframe> whose src host is
-#     not on this list before the page is stored/rendered; and
-#   - render-time, by the CSP frame-src directive below, which refuses to load a
-#     frame from an origin not on this list.
+#   - display-time, by HtmlScrubber, which strips any <iframe> whose src host is
+#     not on this list every time page content renders — stored Markdown stays
+#     raw, so the list applies retroactively to existing content; and
+#   - browser-side, by the CSP frame-src directive below, which refuses to load
+#     a frame from an origin not on this list.
 # Both derive their host set from here, so an operator who adds a provider gets
 # it honored in both places from one change.
 #
@@ -130,9 +131,9 @@ end
 # an owner must confirm before this enforces. Set DEFAULT_PROVIDERS to {} to ship
 # with no built-in providers.
 module EmbedAllowlist
-  # Provider name => host matcher(s). A leading "*." matches the apex and any
-  # subdomain (e.g. "*.vimeo.com" matches "vimeo.com" and "player.vimeo.com").
-  # Product-owned default list — curate before enforcing.
+  # Provider name => host matcher(s). A leading "*." matches any subdomain but
+  # not the apex, mirroring CSP host-source semantics — list the apex separately
+  # when both are wanted. Product-owned default list — curate before enforcing.
   DEFAULT_PROVIDERS = {
     "YouTube"     => %w[ www.youtube.com youtube.com www.youtube-nocookie.com ],
     "Vimeo"       => %w[ player.vimeo.com ],
@@ -181,25 +182,34 @@ module EmbedAllowlist
         nil
       end
 
+      # Mirrors CSP host-source semantics: a "*." pattern covers subdomains
+      # only, never the apex, so the scrubber keeps exactly the frames the
+      # frame-src directive will load.
       def host_matches?(host, pattern)
         pattern = pattern.downcase
         if pattern.start_with?("*.")
-          apex = pattern.delete_prefix("*.")
-          host == apex || host.end_with?(".#{apex}")
+          host.end_with?(pattern.delete_prefix("*"))
         else
           host == pattern
         end
       end
 
-      # Extract a bare host from a CSP source expression: "https://www.youtube.com"
-      # or "https://*.vimeo.com/embed" => "www.youtube.com" / "*.vimeo.com". Returns
-      # nil for scheme-only or keyword tokens (:self, https:, 'unsafe-inline', a
-      # host:port) that carry no plain host to match an iframe src against.
+      # Extract a host from a CSP source expression the scrubber can honor
+      # faithfully: "https://www.youtube.com" or "https://*.vimeo.com". Anything
+      # narrower or stranger than a plain https origin — a path, a port, a
+      # scheme-only or keyword token — returns nil: stripping the qualifier
+      # would make the scrubber accept more than the CSP source actually
+      # allows, so such sources feed frame-src only and admit no iframes.
       def host_from_source(source)
-        token = source.to_s.strip.delete_prefix("https://").delete_prefix("http://")
-        token = token.split("/").first.to_s
-        return nil if token.blank? || token.include?(":") || token.start_with?("'")
-        token
+        token = source.to_s.strip
+        return nil if token.start_with?("'")
+
+        token = token.delete_prefix("https://").delete_prefix("http://")
+        if token.blank? || token.include?("/") || token.include?(":")
+          nil
+        else
+          token
+        end
       end
   end
 end
