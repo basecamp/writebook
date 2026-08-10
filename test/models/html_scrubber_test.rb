@@ -36,7 +36,7 @@ class HtmlScrubberTest < ActiveSupport::TestCase
     assert_includes out, "width", "vetted attributes survive"
     assert_not_includes out, "srcdoc", "srcdoc is dropped"
     assert_not_includes out, "onload", "on* handlers are dropped"
-    assert_not_includes out, "sandbox", "author sandbox override is dropped"
+    assert_includes out, %(sandbox=""), "an authored sandbox only restricts and survives"
     assert_not_includes out, %(name="x"), "arbitrary attributes are dropped"
   end
 
@@ -48,6 +48,20 @@ class HtmlScrubberTest < ActiveSupport::TestCase
     assert_match %r{allow="[^"]*autoplay}, out
     assert_not_includes out, "camera"
     assert_not_includes out, "microphone"
+  end
+
+  test "keeps an authored sandbox and drops a leaking referrerpolicy" do
+    html = %(<iframe src="https://www.youtube.com/embed/x" sandbox="" referrerpolicy="unsafe-url"></iframe>)
+    out  = scrub(html)
+
+    assert_includes out, "sandbox", "an authored sandbox only ever restricts; stripping it would grant privileges"
+    assert_not_includes out, "referrerpolicy", "unsafe-url leaks the reader's full URL to the provider"
+  end
+
+  test "keeps a non-leaking referrerpolicy" do
+    out = scrub(%(<iframe src="https://www.youtube.com/embed/x" referrerpolicy="no-referrer"></iframe>))
+
+    assert_includes out, %(referrerpolicy="no-referrer")
   end
 
   test "keeps an authored allowlist on a surviving allow directive" do

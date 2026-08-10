@@ -53,6 +53,13 @@ class EmbedAllowlistTest < ActiveSupport::TestCase
     end
   end
 
+  test "an explicit :443 source counts as a plain https origin" do
+    with_env "CSP_EXTRA_FRAME_SRC" => "https://embed.example:443" do
+      assert EmbedAllowlist.allows?("https://embed.example/widget")
+      assert EmbedAllowlist.allows?("https://embed.example:443/widget")
+    end
+  end
+
   test "sources narrower than a plain origin feed CSP only, never the scrubber" do
     with_env "CSP_EXTRA_FRAME_SRC" => "https://example.test/approved/ https://ported.example.test:8443" do
       # Dropping the path or port would let the scrubber accept more than the

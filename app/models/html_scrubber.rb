@@ -1,14 +1,23 @@
 class HtmlScrubber < Rails::Html::PermitScrubber
   # Attributes preserved on a surviving <iframe>. Everything else — srcdoc, on*
-  # handlers, name, sandbox overrides, arbitrary allow — is dropped so only the
-  # vetted embed shape survives. See EmbedAllowlist for the host allowlist.
-  IFRAME_ATTRIBUTES = %w[ src width height allowfullscreen loading referrerpolicy title frameborder allow ].freeze
+  # handlers, name — is dropped so only the vetted embed shape survives. An
+  # authored sandbox is kept: the attribute can only ever remove privileges
+  # relative to no attribute at all, so honoring it never widens anything.
+  # See EmbedAllowlist for the host allowlist.
+  IFRAME_ATTRIBUTES = %w[ src width height allowfullscreen loading referrerpolicy sandbox title frameborder allow ].freeze
 
   # Feature-policy tokens permitted in a surviving iframe `allow` attribute. Any
   # other requested capability (camera, microphone, geolocation, …) is dropped.
   IFRAME_ALLOW_TOKENS = %w[
     accelerometer autoplay clipboard-write encrypted-media fullscreen
     gyroscope picture-in-picture web-share
+  ].freeze
+
+  # referrerpolicy values that don't leak the reader's full URL to the embed
+  # provider; unsafe-url and the downgrade-tolerant default are dropped.
+  IFRAME_REFERRER_POLICIES = %w[
+    no-referrer origin origin-when-cross-origin same-origin
+    strict-origin strict-origin-when-cross-origin
   ].freeze
 
   def initialize
@@ -47,11 +56,18 @@ class HtmlScrubber < Rails::Html::PermitScrubber
       node.attribute_nodes.each do |attr|
         name = attr.name.downcase
         if IFRAME_ATTRIBUTES.include?(name)
-          node[attr.name] = filtered_allow(attr.value) if name == "allow"
+          case name
+          when "allow"          then node[attr.name] = filtered_allow(attr.value)
+          when "referrerpolicy" then filter_referrerpolicy(node, attr)
+          end
         else
           attr.remove
         end
       end
+    end
+
+    def filter_referrerpolicy(node, attr)
+      attr.remove unless IFRAME_REFERRER_POLICIES.include?(attr.value.to_s.strip.downcase)
     end
 
     # Keep the whole directive, not just its feature name: `autoplay 'none'`
