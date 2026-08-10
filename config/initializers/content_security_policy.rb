@@ -205,12 +205,14 @@ module EmbedAllowlist
       # would make the scrubber accept more than the CSP source actually
       # allows, so such sources feed frame-src only and admit no iframes.
       # An explicit :443 IS a plain https origin (CSP matches it like an
-      # omitted port), so it is normalized away rather than rejected.
+      # omitted port), and a bare trailing slash IS the whole host (a CSP root
+      # path matches every path), so both are normalized away rather than
+      # rejected.
       def host_from_source(source)
         token = source.to_s.strip
         return nil if token.start_with?("'")
 
-        token = token.delete_prefix("https://").delete_prefix("http://").delete_suffix(":443")
+        token = token.delete_prefix("https://").delete_prefix("http://").delete_suffix("/").delete_suffix(":443")
         if token.blank? || token.include?("/") || token.include?(":")
           nil
         else

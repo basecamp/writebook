@@ -60,6 +60,12 @@ class EmbedAllowlistTest < ActiveSupport::TestCase
     end
   end
 
+  test "a bare trailing slash counts as the whole host, like the CSP root path does" do
+    with_env "CSP_EXTRA_FRAME_SRC" => "https://embed.example/" do
+      assert EmbedAllowlist.allows?("https://embed.example/widget")
+    end
+  end
+
   test "sources narrower than a plain origin feed CSP only, never the scrubber" do
     with_env "CSP_EXTRA_FRAME_SRC" => "https://example.test/approved/ https://ported.example.test:8443" do
       # Dropping the path or port would let the scrubber accept more than the
