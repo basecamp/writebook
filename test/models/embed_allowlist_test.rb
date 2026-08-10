@@ -27,6 +27,13 @@ class EmbedAllowlistTest < ActiveSupport::TestCase
     end
   end
 
+  test "non-default ports are rejected to match the portless CSP sources" do
+    with_env "CSP_EXTRA_FRAME_SRC" => nil do
+      assert_not EmbedAllowlist.allows?("https://www.youtube.com:8443/embed/x")
+      assert EmbedAllowlist.allows?("https://www.youtube.com:443/embed/x"), "an explicit default port matches like an omitted one"
+    end
+  end
+
   test "a per-install ENV host is honored, from the same source CSP frame-src reads" do
     with_env "CSP_EXTRA_FRAME_SRC" => "https://maps.example.test https://forms.example.test" do
       assert EmbedAllowlist.allows?("https://maps.example.test/embed")

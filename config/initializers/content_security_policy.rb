@@ -150,10 +150,14 @@ module EmbedAllowlist
       (default_hosts + extra_hosts).uniq
     end
 
-    # True when +src+ is an https URL whose host is on the allowlist.
+    # True when +src+ is an https URL, on the default port, whose host is on
+    # the allowlist. A non-default port must be rejected here because the CSP
+    # sources carry no port — and a portless CSP source matches only the
+    # scheme's default port, so a kept iframe on :8443 would be one the
+    # browser then refuses to load.
     def allows?(src)
       uri = parse(src)
-      return false unless uri && ALLOWED_SCHEMES.include?(uri.scheme) && uri.host.present?
+      return false unless uri && ALLOWED_SCHEMES.include?(uri.scheme) && uri.host.present? && uri.port == uri.default_port
 
       host = uri.host.downcase
       hosts.any? { |pattern| host_matches?(host, pattern) }
