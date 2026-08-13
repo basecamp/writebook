@@ -35,7 +35,11 @@ Rails.application.routes.draw do
 
     resources :sections
     resources :pictures
-    resources :pages
+    resources :pages do
+      scope module: "pages" do
+        resources :uploads, only: :create
+      end
+    end
   end
 
   get "/:id/:slug", to: "books#show", constraints: { id: /\d+/ }, as: :slugged_book

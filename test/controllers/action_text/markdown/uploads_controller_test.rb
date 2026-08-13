@@ -16,8 +16,9 @@ class ActionText::Markdown::UploadsControllerTest < ActionDispatch::IntegrationT
 
     assert_response :success
 
-    # Uploads should use relative URLs, to allow for future hostname changes
-    assert JSON.parse(response.body)["fileUrl"].start_with?("/")
+    # Absolute URLs, so bodies mirrored into git render everywhere. A hostname
+    # change means a one-time rewrite of stored bodies.
+    assert JSON.parse(response.body)["fileUrl"].start_with?("http://www.example.com/u/")
   end
 
   test "a signed id minted for some other purpose can't be used to upload" do
