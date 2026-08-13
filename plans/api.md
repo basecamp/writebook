@@ -41,10 +41,17 @@ def record_new_edit?(leafable_params)
 end
 ```
 
-An unchanged page records no revision, and repeated edits inside 10 minutes
-coalesce. A sync that re-sends all 45 pages on every push is therefore cheap and
-does not shred the revision history — **provided it goes through `Leaf#edit` and
-not `page.update!`**. This is the single easiest thing to get wrong.
+Repeated edits inside 10 minutes coalesce. **But the no-change detection is
+broken for Pages**: `will_change_leafable?` compares `leafable.attributes[key]`,
+and a Page's body is a `has_markdown` association, not a column — so
+`attributes["body"]` is always nil and any submitted body counts as a change.
+Re-sending 45 unchanged pages on a push more than 10 minutes after the last one
+would record 45 junk revisions, each duplicating the Page and its Markdown row
+(`update_and_record_edit` dups the leafable). Fix it in the model — compare
+`leafable.body.content.to_s` for markdown attributes — so the web UI benefits
+too. Sections are unaffected (`body` is a real column). With that fixed, the
+cheap-resync property holds — **provided the API goes through `Leaf#edit` and
+not `page.update!`**.
 
 **Other relevant API:** `Book#press(leafable, leaf_params)` creates a leaf;
 `Positionable#move_to_position(offset)` reorders; `Leaf#slug` is
@@ -136,10 +143,13 @@ To make the round trip exact:
 - **No whitespace drift.** The serializer must not append newlines the parser
   drops, or every sync run looks like a change.
 
-Sections don't need round-trip; they stay writable with a plain JSON body
-(`title`, `body`, `theme`) — `Section#markable` is a bare string anyway. The one
-JSON read endpoint is the manifest: `id`, `leafable_type`, `title`, `slug`,
-`position`, `external_id` per leaf.
+Sections are writable in v1 — the Omarchy manual's four part dividers are
+Sections and currently exist nowhere in git. They don't need round-trip; they
+stay writable with a plain JSON body (`title`, `body`, `theme`) —
+`Section#markable` is a bare string anyway. In the repo a section is a file like
+any other leaf, marked `type: section` in its front matter; the sync script reads
+that to pick the endpoint. The one JSON read endpoint is the manifest: `id`,
+`leafable_type`, `title`, `slug`, `position`, `external_id` per leaf.
 
 ### 3. Endpoints
 
@@ -166,17 +176,31 @@ Reuse `SetBookLeaf`, which already gives `set_book` (`Book.accessable_or_publish
 
 ### 4. Upsert key
 
-Add `external_id` (string, nullable) to `leaves`, unique per book. Support upsert
-by it, e.g. `PUT /books/:book_id/leaves/by_external_id/:external_id.json`, or a
-`external_id` field on create that finds-or-creates.
+Add `external_id` (string, nullable) to `leaves`, unique per book. Upsert rides
+the front matter: a `POST` whose document carries `external_id:` finds-or-creates
+by it. No dedicated `/by_external_id/` route — the key contains `.`, which would
+fight the router's format parsing.
 
 Without this the client must keep its own filename→leaf-ID map, which drifts the
 first time someone edits in the web UI, and makes renames indistinguishable from
-delete+create. The Omarchy sync would set `external_id` to the repo-relative path
-(`manual/27-monitors.md`).
+delete+create. The Omarchy sync sets it to the filename with the ordering prefix
+stripped: `27-monitors.md` → `monitors.md`. The prefix carries position, the name
+carries identity — so renumbering files to reorder or insert pages (the common
+case) doesn't churn identity, leaf ids, or published URLs. A true rename still
+reads as delete+create: rare, and acceptable. Two files sharing a stripped name
+collide on the unique index, which fails the sync loudly — an authoring error,
+correctly rejected.
 
 Deletes should trash, not destroy — `Leaf` already has `status: %w[active trashed]`
 and `Leaf::Editable#record_moved_to_trash` logs it. A bad sync must be recoverable.
+A trashed leaf keeps its `external_id`, so upsert must match trashed leaves too
+and restore them (back to `active`, then `Leaf#edit`) rather than collide with the
+unique index — a bad sync that trashed pages heals itself on the next good push.
+
+**Git always wins.** The sync trashes leaves absent from the repo and overwrites
+web-UI edits on the next push. Soft-trash and the revision history make both
+recoverable. This makes web editing of a mirrored book advisory — that's the
+simplicity trade, made deliberately.
 
 ### 5. Uploads
 
@@ -196,6 +220,16 @@ that resolves the page from `:book_id`/`:id` instead, authorizes with the existi
 Serving already works for this use case: `#show` is `allow_unauthenticated_access`
 and sets `expires_in 1.year, public: true` for published books, so the URLs render
 on GitHub and cache well.
+
+**Uploads return absolute URLs, and the editor inserts them.** Today the editor
+inserts the relative `/u/<slug>` path — `create.json.jbuilder` renders `fileUrl`
+from `Attachment#slug_path` (`lib/rails_ext/active_storage_sluggable.rb:8`).
+Switch that to the full URL (`action_text_markdown_upload_url`) so bodies carry
+the same explicit URL the git source does. Images then render on GitHub and in
+local editors, and the byte-for-byte round trip holds with no rewriting on either
+side. The cost is baking the canonical host into stored bodies — a domain move
+needs a one-time rewrite. Existing bodies hold relative paths; normalize the
+manual's once during the initial export to git.
 
 ### 6. Positioning
 
@@ -224,15 +258,11 @@ Cover at minimum:
 - A key whose user has no `Access` to a private book gets `:forbidden`.
 - Re-sending identical content records **no** new `Edit`.
 - Two edits inside `MINIMUM_TIME_BETWEEN_VERSIONS` produce one revision.
-- Upsert by `external_id` updates rather than duplicating.
+- Upsert by `external_id` updates rather than duplicating, and restores a
+  trashed match instead of colliding with the unique index.
 - `GET` then `PUT` of an untouched leaf `.md` is a no-op, and a title containing
   `"` survives the round trip.
 - Upload returns a `/u/...` URL that `#show` then serves.
-
-## Open questions
-
-- **Should Sections be writable in v1?** The Omarchy manual needs them, since its
-  four part dividers are Sections and currently exist nowhere in git.
 
 ## Out of scope
 
