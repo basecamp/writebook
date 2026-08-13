@@ -1,6 +1,1 @@
----
-title: <%= raw JSON.generate(@leaf.title) %>
-url: "<%= leafable_slug_url(@leaf) %>"
----
-
-<%= raw @leaf.leafable.markable %>
+<%= raw Leaf::Document.from(@leaf, url: leafable_slug_url(@leaf)) %>
