@@ -40,10 +40,12 @@ module ActionText::Markdown::Uploads
   end
 end
 
-ActiveSupport.on_load :active_storage_attachment do
-  class ActionText::Markdown
-    include ActionText::Markdown::Uploads
-  end
+# to_prepare, not on_load(:active_storage_attachment): the load hook only fired
+# once something else happened to load ActiveStorage::Attachment, leaving uploads
+# undefined in a process serving an upload as its first storage-touching request.
+# has_many_attached isn't defined until after the initializers, so it can't run here.
+Rails.application.config.to_prepare do
+  ActionText::Markdown.include ActionText::Markdown::Uploads
 end
 
 ActiveSupport.run_load_hooks :action_text_markdown, ActionText::Markdown
