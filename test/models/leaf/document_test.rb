@@ -71,6 +71,21 @@ class Leaf::DocumentTest < ActiveSupport::TestCase
     assert_equal "Body", parsed.body
   end
 
+  test "binary-encoded requests with UTF-8 content parse" do
+    raw = "---\ntitle: Führung\n---\n\nEm — dash".b
+    parsed = Leaf::Document.parse(raw)
+
+    assert_equal "Führung", parsed.title
+    assert_equal "Em — dash", parsed.body
+    assert_equal Encoding::UTF_8, parsed.body.encoding
+  end
+
+  test "rejects invalid UTF-8" do
+    assert_raises Leaf::Document::Malformed do
+      Leaf::Document.parse("---\ntitle: T\n---\n\n\xE2 broken".b)
+    end
+  end
+
   test "rejects documents without front matter" do
     assert_raises Leaf::Document::Malformed do
       Leaf::Document.parse("Just a body")

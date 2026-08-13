@@ -9,6 +9,9 @@ class Leaf::Document
   # takes the first closing delimiter and exactly one blank line after it, so
   # bodies containing --- lines round-trip untouched.
   def self.parse(text)
+    # Request bodies arrive binary-encoded; the wire format is UTF-8
+    text = text.dup.force_encoding(Encoding::UTF_8)
+    raise Malformed, "not valid UTF-8" unless text.valid_encoding?
     raise Malformed, "missing front matter" unless text.start_with?("---\n")
 
     front, delimiter, body = text[4..].partition(FRONT_MATTER_DELIMITER)
