@@ -1,5 +1,5 @@
 ---
-title: "<%= @leaf.title %>"
+title: <%= raw JSON.generate(@leaf.title) %>
 url: "<%= leafable_slug_url(@leaf) %>"
 ---
 

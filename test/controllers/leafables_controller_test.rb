@@ -86,6 +86,16 @@ class LeafablesControllerTest < ActionDispatch::IntegrationTest
     assert_select "figure img[src*=\"pixel.bmp\"]"
   end
 
+  test "show with markdown format escapes the title for the front matter" do
+    leaves(:welcome_page).update!(title: %(A "quoted" title & more))
+
+    get leafable_slug_path(leaves(:welcome_page), format: :md)
+
+    assert_response :success
+    assert_in_body 'title: "A \"quoted\" title & more"'
+    assert_not_in_body "&amp;"
+  end
+
   test "show with markdown format does not escape HTML entities" do
     leaves(:welcome_page).leafable.update!(body: "This has <a href='http://example.com'>a link</a>")
 

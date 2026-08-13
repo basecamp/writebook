@@ -1,6 +1,6 @@
 ---
-title: "<%= @book.title %>"
-author: "<%= @book.author %>"
+title: <%= raw JSON.generate(@book.title) %>
+author: <%= raw JSON.generate(@book.author.to_s) %>
 url: "<%= book_slug_url(@book) %>"
 ---
 
