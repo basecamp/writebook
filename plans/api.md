@@ -114,8 +114,9 @@ route) only. This makes the dead CSRF guard at
 `app/controllers/concerns/authentication.rb:9` live — rename its `bot_key?`
 inquiry to `bearer_key?` to match.
 
-Expose show/reset on the existing user profile (`Users::ProfilesController`);
-until then, `regenerate_bearer_key` from the console is enough. Note that
+Show and reset the key on the profile edit page, alongside the session transfer
+link it resembles — never on the profile show page, which everyone in the account
+can see. Note that
 `request_authentication` redirects to login — the bearer path must render
 `head :unauthorized` for API requests instead of a 302.
 
