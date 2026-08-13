@@ -1,5 +1,6 @@
 module TranslationsHelper
   TRANSLATIONS = {
+    bearer_key: { "🇺🇸": "Your API key for scripts that write to your books", "🇪🇸": "Tu clave de API para scripts que escriben en tus libros", "🇫🇷": "Votre clé d'API pour les scripts qui écrivent dans vos livres", "🇮🇳": "आपकी API कुंजी उन स्क्रिप्ट्स के लिए जो आपकी पुस्तकों में लिखती हैं", "🇩🇪": "Ihr API-Schlüssel für Skripte, die in Ihre Bücher schreiben", "🇧🇷": "Sua chave de API para scripts que escrevem em seus livros" },
     book_author: { "🇺🇸": "Author", "🇪🇸": "Autor", "🇫🇷": "Auteur", "🇮🇳": "लेखक", "🇩🇪": "Autor", "🇧🇷": "Autor" },
     book_subtitle: { "🇺🇸": "Subtitle", "🇪🇸": "Subtítulo", "🇫🇷": "Sous-titre", "🇮🇳": "उपशीर्षक", "🇩🇪": "Untertitel", "🇧🇷": "Subtítulo" },
     book_title: { "🇺🇸": "Book title", "🇪🇸": "Título del libro", "🇫🇷": "Titre du livre", "🇮🇳": "पुस्तक का शीर्षक", "🇩🇪": "Buchtitel", "🇧🇷": "Título do livro" },

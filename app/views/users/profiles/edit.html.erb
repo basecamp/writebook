@@ -56,6 +56,10 @@
 </div>
 
 <div class="panel margin-block-double shadow center">
+  <%= render "users/bearer_key", user: @user %>
+</div>
+
+<div class="panel margin-block-double shadow center">
   <%= button_to session_path, method: :delete, class: "btn center" do %>
     <%= image_tag "logout.svg", aria: { hidden: true }, size: 24 %>
     <span class="for-screen-reader">Sign out</span>
