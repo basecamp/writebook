@@ -2,24 +2,28 @@
 
 david:
   name: David
+  bearer_key: david_bearer_key
   email_address: david@example.com
   password_digest: <%= password_digest %>
   role: administrator
 
 jason:
   name: Jason
+  bearer_key: jason_bearer_key
   email_address: jason@example.com
   password_digest: <%= password_digest %>
   role: administrator
 
 jz:
   name: JZ
+  bearer_key: jz_bearer_key
   email_address: jz@example.com
   password_digest: <%= password_digest %>
   role: member
 
 kevin:
   name: Kevin
+  bearer_key: kevin_bearer_key
   email_address: kevin@example.com
   password_digest: <%= password_digest %>
   role: member

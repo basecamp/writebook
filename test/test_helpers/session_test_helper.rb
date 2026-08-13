@@ -13,4 +13,9 @@ module SessionTestHelper
     delete session_url
     assert_not cookies[:session_token].present?
   end
+
+  def bearer_key_header(user)
+    user = users(user) unless user.is_a? User
+    { "Authorization" => "Bearer #{user.bearer_key}" }
+  end
 end

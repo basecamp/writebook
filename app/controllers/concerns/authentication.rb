@@ -6,7 +6,7 @@ module Authentication
     before_action :require_authentication
     helper_method :signed_in?
 
-    protect_from_forgery with: :exception, unless: -> { authenticated_by.bot_key? }
+    protect_from_forgery with: :exception, unless: -> { authenticated_by.bearer_key? }
   end
 
   class_methods do
@@ -18,6 +18,10 @@ module Authentication
     def allow_unauthenticated_access(**options)
       skip_before_action :require_authentication, **options
       before_action :restore_authentication, **options
+    end
+
+    def allow_bearer_key_access(**options)
+      prepend_before_action :permit_bearer_key_authentication, **options
     end
   end
 
@@ -33,12 +37,35 @@ module Authentication
     def restore_authentication
       if session = find_session_by_cookie
         resume_session session
+      elsif user = find_user_by_bearer_key
+        authenticated_as_api_client user
       end
     end
 
+    # Bearer keys only authenticate on controllers that opted in via
+    # allow_bearer_key_access. Everywhere else the request stays anonymous.
+    def permit_bearer_key_authentication
+      @bearer_key_authentication_permitted = true
+    end
+
+    def find_user_by_bearer_key
+      if @bearer_key_authentication_permitted
+        authenticate_with_http_token { |token, _options| User.active.find_by(bearer_key: token) }
+      end
+    end
+
+    def authenticated_as_api_client(user)
+      Current.user = user
+      set_authenticated_by :bearer_key
+    end
+
     def request_authentication
-      session[:return_to_after_authenticating] = request.url
-      redirect_to new_session_url
+      if request.authorization.present? || !request.format.html?
+        head :unauthorized
+      else
+        session[:return_to_after_authenticating] = request.url
+        redirect_to new_session_url
+      end
     end
 
     def redirect_signed_in_user_to_root
