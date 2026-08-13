@@ -24,6 +24,8 @@ Rails.application.routes.draw do
     resource :bookmark, controller: "books/bookmarks", only: :show
 
     scope module: "books" do
+      resources :leaves, only: :index
+
       namespace :leaves do
         resources :moves, only: :create
       end
