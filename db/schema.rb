@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.2].define(version: 2026_08_13_124551) do
+ActiveRecord::Schema[8.2].define(version: 2026_08_13_124952) do
   create_table "accesses", force: :cascade do |t|
     t.integer "book_id", null: false
     t.datetime "created_at", null: false
@@ -97,12 +97,14 @@ ActiveRecord::Schema[8.2].define(version: 2026_08_13_124551) do
   create_table "leaves", force: :cascade do |t|
     t.integer "book_id", null: false
     t.datetime "created_at", null: false
+    t.string "external_id"
     t.integer "leafable_id", null: false
     t.string "leafable_type", null: false
     t.float "position_score", null: false
     t.string "status", null: false
     t.string "title", null: false
     t.datetime "updated_at", null: false
+    t.index ["book_id", "external_id"], name: "index_leaves_on_book_id_and_external_id", unique: true
     t.index ["book_id"], name: "index_leaves_on_book_id"
     t.index ["leafable_type", "leafable_id"], name: "index_leafs_on_leafable"
   end
