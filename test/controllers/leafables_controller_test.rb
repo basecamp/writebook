@@ -30,6 +30,20 @@ class LeafablesControllerTest < ActionDispatch::IntegrationTest
     assert_select "mark", "great"
   end
 
+  test "show highlights a phrase match whose span contains regex metacharacters" do
+    sign_out
+    books(:handbook).update!(published: true)
+
+    section = Section.new(body: "alpha) omega in the body")
+    books(:handbook).press(section, title: "Punctuated")
+    section.leaf.reindex
+
+    get leafable_slug_path(section.leaf), params: { search: '"alpha omega"' }
+
+    assert_response :success
+    assert_select "mark", text: /alpha\) omega/
+  end
+
   test "show does not allow public access to an unpublished book" do
     sign_out
 
