@@ -1,0 +1,21 @@
+davids:
+  user: david
+  refresh_token: davids
+  token_digest: <%= Oauth::TokenDigester.digest("wb_at_#{"d" * 64}") %>
+  expires_at: <%= 1.hour.from_now %>
+
+davids_expired:
+  user: david
+  token_digest: <%= Oauth::TokenDigester.digest("wb_at_#{"e" * 64}") %>
+  expires_at: <%= 1.hour.ago %>
+
+jasons:
+  user: jason
+  refresh_token: jasons
+  token_digest: <%= Oauth::TokenDigester.digest("wb_at_#{"j" * 64}") %>
+  expires_at: <%= 1.hour.from_now %>
+
+jzs:
+  user: jz
+  token_digest: <%= Oauth::TokenDigester.digest("wb_at_#{"z" * 64}") %>
+  expires_at: <%= 1.hour.from_now %>

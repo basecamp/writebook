@@ -16,4 +16,8 @@ class Book < ApplicationRecord
   def markable
     leaves.active.positioned.map { it.leafable.markable }.join("\n\n")
   end
+
+  def fingerprint
+    Digest::SHA256.hexdigest [ title, subtitle, author, theme, cover.attached? ? cover.blob.checksum : nil ].join("\0")
+  end
 end
