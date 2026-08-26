@@ -45,21 +45,15 @@ class Leaf::SearchableTest < ActiveSupport::TestCase
   end
 
   test "search treats FTS5 operators as literal terms rather than syntax" do
-    # Operator tokens are searched literally, so they match only if the document
-    # actually contains that word — never raising an FTS5 syntax error.
     assert_empty Leaf.search("OR")
     assert_empty Leaf.search("great AND NOT")
     assert_empty Leaf.search("great OR handbook")
 
-    # A legitimate multi-term query keeps working after the escaping change.
     assert_includes Leaf.search("great handbook"), leaves(:welcome_page)
     assert_includes Leaf.search("\"great handbook\""), leaves(:welcome_page)
   end
 
   test "a stray empty quote pair does not split a following phrase" do
-    # "" must be consumed in place; otherwise the phrase "great handbook"
-    # degrades into separate word matches that also hit documents where the
-    # two words are present but non-adjacent.
     sections(:welcome).update!(body: "great old handbook")
     leaves(:welcome_section).reindex
 

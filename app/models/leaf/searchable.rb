@@ -15,10 +15,6 @@ module Leaf::Searchable
     end
 
     def sanitize_query_syntax(terms)
-      # scrub replaces any invalid UTF-8 bytes so the gsub below can't raise an
-      # ArgumentError on a malformed string. Reachable over HTTP only in theory
-      # — Rails rejects malformed query/body encoding with a 400 first — but it
-      # keeps this shared sink total for every caller.
       terms = terms.to_s.scrub
       terms = remove_invalid_search_characters(terms)
       terms = quote_query_tokens(terms)

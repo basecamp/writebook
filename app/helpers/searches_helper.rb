@@ -22,9 +22,6 @@ module SearchesHelper
   end
 
   private
-    # Terms come from FTS5 highlight() spans, which can include document
-    # punctuation (e.g. a phrase match spanning "alpha(beta"). Escape them so
-    # metacharacters are matched literally instead of raising a RegexpError.
     def whole_word_matchers(terms)
       terms.map { |term| /\b#{Regexp.escape(term)}\b/ }
     end
