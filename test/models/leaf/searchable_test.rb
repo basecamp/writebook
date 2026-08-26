@@ -56,6 +56,19 @@ class Leaf::SearchableTest < ActiveSupport::TestCase
     assert_includes Leaf.search("\"great handbook\""), leaves(:welcome_page)
   end
 
+  test "a stray empty quote pair does not split a following phrase" do
+    # "" must be consumed in place; otherwise the phrase "great handbook"
+    # degrades into separate word matches that also hit documents where the
+    # two words are present but non-adjacent.
+    sections(:welcome).update!(body: "great old handbook")
+    leaves(:welcome_section).reindex
+
+    results = Leaf.search("\"\" \"great handbook\"")
+
+    assert_includes results, leaves(:welcome_page)
+    assert_not_includes results, leaves(:welcome_section)
+  end
+
   test "indexing sanitizes section body" do
     section = Section.new(body: 'findme Tom & Jerry <img src=x onerror="alert(1)">')
     books(:handbook).press(section, title: "Safe Title")

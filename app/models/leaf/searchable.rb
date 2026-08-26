@@ -114,9 +114,15 @@ module Leaf::Searchable
         # a syntax error. Rebuild the query from its balanced "quoted phrases"
         # and bare words, wrapping every token as a quoted string literal so
         # arbitrary input is matched literally instead of parsed as syntax.
+        #
+        # Match empty quote pairs too (`[^"]*`, not `+`) so a stray `""` is
+        # consumed in place rather than pairing its closing quote with the next
+        # opening one — which would shift the boundaries of a following phrase
+        # and split it into separate word matches. Empty tokens are then dropped.
         def quote_query_tokens(terms)
-          terms.scan(/"[^"]+"|\w+/)
-            .map { |token| %("#{token.delete('"')}") }
+          terms.scan(/"[^"]*"|\w+/)
+            .filter_map { |token| token.delete('"').presence }
+            .map { |token| %("#{token}") }
             .join(" ")
         end
     end

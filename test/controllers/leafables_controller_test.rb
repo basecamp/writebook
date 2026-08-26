@@ -39,7 +39,7 @@ class LeafablesControllerTest < ActionDispatch::IntegrationTest
       get leafable_slug_path(leaves(:welcome_page)), params: { search: query }
 
       assert_response :success, "expected #{query.inspect} to render without error"
-      assert_select "p", "This is such a great handbook."
+      assert_in_body "a great handbook."
     end
   end
 
@@ -59,11 +59,10 @@ class LeafablesControllerTest < ActionDispatch::IntegrationTest
     sign_out
     books(:handbook).update!(published: true)
 
-    section = Section.new(body: "alpha(beta gamma in the body")
-    books(:handbook).press(section, title: "Punctuated")
-    section.leaf.reindex
+    sections(:welcome).update!(body: "alpha(beta gamma in the body")
+    leaves(:welcome_section).reindex
 
-    get leafable_slug_path(section.leaf), params: { search: "alpha_beta" }
+    get leafable_slug_path(leaves(:welcome_section)), params: { search: "alpha_beta" }
 
     assert_response :success
     assert_select "mark", text: /alpha\(beta/

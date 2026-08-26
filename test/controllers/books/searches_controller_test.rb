@@ -43,14 +43,14 @@ class Books::SearchesControllerTest < ActionDispatch::IntegrationTest
 
   test "create shows no matches when the search uses FTS5 operator syntax" do
     [ "OR", "AND", "NOT", "great OR", "NEAR handbook", "great AND NOT" ].each do |query|
-      post book_search_url(books(:handbook)), params: { search: query }
+      post book_search_path(books(:handbook)), params: { search: query }
 
       assert_response :success, "expected #{query.inspect} to render without error"
     end
   end
 
   test "create still finds matches for an ordinary multi-word query" do
-    post book_search_url(books(:handbook)), params: { search: "great handbook" }
+    post book_search_path(books(:handbook)), params: { search: "great handbook" }
 
     assert_response :success
     assert_select "a.search__result"
