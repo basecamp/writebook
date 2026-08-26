@@ -69,6 +69,16 @@ class Leaf::SearchableTest < ActiveSupport::TestCase
     assert_not_includes results, leaves(:welcome_section)
   end
 
+  test "search does not raise on invalid UTF-8 byte sequences" do
+    malformed = "caf\xFF".dup.force_encoding("UTF-8")
+    assert_not malformed.valid_encoding?
+
+    assert_nothing_raised do
+      assert_empty Leaf.search(malformed)
+      assert_empty leaves(:welcome_page).matches_for_highlight(malformed)
+    end
+  end
+
   test "indexing sanitizes section body" do
     section = Section.new(body: 'findme Tom & Jerry <img src=x onerror="alert(1)">')
     books(:handbook).press(section, title: "Safe Title")
