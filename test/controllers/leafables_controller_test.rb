@@ -30,6 +30,31 @@ class LeafablesControllerTest < ActionDispatch::IntegrationTest
     assert_select "mark", "great"
   end
 
+  test "show does not raise when the search query sanitizes to empty" do
+    sign_out
+    books(:handbook).update!(published: true)
+    Leaf.reindex_all
+
+    [ "^$", "!!!", "🙂", "\"" ].each do |query|
+      get leafable_slug_path(leaves(:welcome_page)), params: { search: query }
+
+      assert_response :success, "expected #{query.inspect} to render without error"
+      assert_select "p", "This is such a great handbook."
+    end
+  end
+
+  test "show does not raise when the search query uses FTS5 operator syntax" do
+    sign_out
+    books(:handbook).update!(published: true)
+    Leaf.reindex_all
+
+    [ "OR", "AND", "NOT", "great OR", "NEAR handbook", "great AND NOT" ].each do |query|
+      get leafable_slug_path(leaves(:welcome_page)), params: { search: query }
+
+      assert_response :success, "expected #{query.inspect} to render without error"
+    end
+  end
+
   test "show does not allow public access to an unpublished book" do
     sign_out
 

@@ -17,7 +17,7 @@ module Leaf::Searchable
     def sanitize_query_syntax(terms)
       terms = terms.to_s
       terms = remove_invalid_search_characters(terms)
-      terms = remove_unbalanced_quotes(terms)
+      terms = quote_query_tokens(terms)
       terms.presence
     end
 
@@ -50,6 +50,8 @@ module Leaf::Searchable
         .pick(Arel.sql("highlight(leaf_search_index, 1, '<mark>', '</mark>')"))
 
       content ? unique_matching_terms(content) : []
+    else
+      []
     end
   end
 
@@ -106,12 +108,16 @@ module Leaf::Searchable
           terms.gsub(/[^\w"]/, " ")
         end
 
-        def remove_unbalanced_quotes(terms)
-          if terms.count("\"").even?
-            terms
-          else
-            terms.gsub("\"", " ")
-          end
+        # After stripping the characters FTS5 can't tokenize, the remaining
+        # input may still be an FTS5 boolean operator (AND/OR/NOT/NEAR) or
+        # carry an unbalanced double quote — either of which makes SQLite raise
+        # a syntax error. Rebuild the query from its balanced "quoted phrases"
+        # and bare words, wrapping every token as a quoted string literal so
+        # arbitrary input is matched literally instead of parsed as syntax.
+        def quote_query_tokens(terms)
+          terms.scan(/"[^"]+"|\w+/)
+            .map { |token| %("#{token.delete('"')}") }
+            .join(" ")
         end
     end
 end
