@@ -1,25 +1,19 @@
 # Be sure to restart your server when you modify this file.
-
-# Define an application-wide content security policy.
-# See the Securing Rails Applications Guide for more information:
-# https://guides.rubyonrails.org/security.html#content-security-policy-header
-
-# Rails.application.configure do
-#   config.content_security_policy do |policy|
-#     policy.default_src :self, :https
-#     policy.font_src    :self, :https, :data
-#     policy.img_src     :self, :https, :data
-#     policy.object_src  :none
-#     policy.script_src  :self, :https
-#     policy.style_src   :self, :https
-#     # Specify URI for violation reports
-#     # policy.report_uri "/csp-violation-report-endpoint"
-#   end
 #
-#   # Generate session nonces for permitted importmap, inline scripts, and inline styles.
-#   config.content_security_policy_nonce_generator = ->(request) { request.session.id.to_s }
-#   config.content_security_policy_nonce_directives = %w(script-src style-src)
+# Render-time half of the iframe embed allowlist. The `frame-src` directive is
+# derived from the EmbedProvider table — the same source of truth the author-time
+# HtmlScrubber reads — so the two enforcement points can't drift. Operators
+# extend the allowlist per install via WRITEBOOK_EMBED_PROVIDERS (see
+# app/models/embed_provider.rb); that widens both the scrubber and this directive
+# at once.
 #
-#   # Report violations without enforcing the policy.
-#   # config.content_security_policy_report_only = true
-# end
+# The source is a lambda so it's resolved per request (in controller context),
+# which keeps the header in lockstep with the provider table without referencing
+# an autoloaded constant at boot. Only `frame-src` is set: the rest of the policy
+# is intentionally left unrestricted so this hardening is limited to which origins
+# may be framed.
+Rails.application.configure do
+  config.content_security_policy do |policy|
+    policy.frame_src -> { EmbedProvider.csp_frame_sources.presence || [ :none ] }
+  end
+end

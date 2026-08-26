@@ -24,10 +24,17 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_select "#test", html: %(<div style="text-align:center;">Hello</div>)
   end
 
-  test "show with iframes" do
+  test "show keeps an approved-provider iframe" do
+    get leafable_path(sample_page_leaf(%(<div id="test"><iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe></div>)))
+
+    assert_select "#test iframe[src=?]", "https://www.youtube.com/embed/dQw4w9WgXcQ"
+  end
+
+  test "show strips an off-allowlist iframe" do
     get leafable_path(sample_page_leaf(%(<div id="test"><iframe src="http://example.com"></iframe></div>)))
 
-    assert_select "#test", html: %(<iframe src="http://example.com"></iframe>)
+    assert_select "#test", html: ""
+    assert_select "#test iframe", count: 0
   end
 
   test "show with tables in the markdown" do
