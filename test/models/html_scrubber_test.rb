@@ -79,7 +79,7 @@ class HtmlScrubberTest < ActiveSupport::TestCase
   end
 
   test "strips value-sensitive iframe attributes but keeps safe embed attributes" do
-    result = scrub(%(<iframe src="https://ex.com" allow="camera" referrerpolicy="unsafe-url" sandbox="allow-scripts" allowfullscreen frameborder="0"></iframe>))
+    result = scrub(%(<iframe src="https://player.vimeo.com/video/76979871" allow="camera" referrerpolicy="unsafe-url" sandbox="allow-scripts" allowfullscreen frameborder="0"></iframe>))
     assert_not_includes result, "allow="
     assert_not_includes result, "referrerpolicy"
     assert_not_includes result, "sandbox"
