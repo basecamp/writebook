@@ -57,14 +57,17 @@ class HtmlScrubberTest < ActiveSupport::TestCase
     kept = scrub(%(<a data-action="lightbox#open:prevent" href="/x">ok</a>))
     assert_includes kept, %(data-action="lightbox#open:prevent")
 
-    # Foreign actions are stripped outright.
+    # Foreign actions are stripped outright — including on an <a>, so it's the exact
+    # value, not merely the anchor tag, that gates survival.
     %w[
       turbo:load@window->lightbox#open
       load->arrangement#dragStartCreate
       mouseover->scroll-to-highlight#scroll
     ].each do |action|
-      result = scrub(%(<div data-action="#{action}">x</div>))
-      assert_not_includes result, "data-action", "expected #{action.inspect} to be stripped"
+      %w[div a].each do |tag|
+        result = scrub(%(<#{tag} data-action="#{action}" href="/x">x</#{tag}>))
+        assert_not_includes result, "data-action", "expected #{action.inspect} on <#{tag}> to be stripped"
+      end
     end
 
     # Even the benign action is stripped off a default-event element that would
