@@ -131,6 +131,21 @@ class ActionText::Markdown::UploadsControllerTest < ActionDispatch::IntegrationT
     assert_response :not_found
   end
 
+  test "an attachment whose owning book can't be resolved is not served" do
+    books(:handbook).update! published: false
+    attachment = attach_upload_to_welcome_page
+
+    # Sever the leaf without cascading the destroy, leaving the attachment live but
+    # its owning book unresolvable. The guard must fail closed on the nil book.
+    pages(:welcome).leaf.delete
+    assert_nil pages(:welcome).reload.owning_book
+
+    reset!
+    get action_text_markdown_upload_url(slug: attachment.slug)
+
+    assert_response :not_found
+  end
+
   test "an attachment of an unpublished book is served to a reader, but not publicly cached" do
     books(:handbook).update! published: false
     attachment = attach_upload_to_welcome_page

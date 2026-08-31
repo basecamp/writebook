@@ -51,8 +51,10 @@ class ActionText::Markdown::UploadsController < ApplicationController
 
     # An unpublished book's uploads are as private as the book itself. Serving them to
     # anyone holding the URL made this a way to read them without an access row, and
-    # caching them publicly for a year put them in shared caches besides.
+    # caching them publicly for a year put them in shared caches besides. An attachment
+    # whose owning book can't be resolved has no book to authorize against, so fail
+    # closed rather than letting the nil short-circuit the check.
     def ensure_attachment_readable
-      head :not_found unless @book.nil? || @book.published? || @book.accessable?
+      head :not_found unless @book&.published? || @book&.accessable?
     end
 end
