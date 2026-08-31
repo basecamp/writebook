@@ -36,6 +36,19 @@ class ActiveStorageAuthenticationTest < ActionDispatch::IntegrationTest
     assert_equal 401, anonymous.status
   end
 
+  test "disk service upload endpoint allows authenticated callers" do
+    sign_in :david
+    post rails_direct_uploads_url, params: blob_params, as: :json
+    assert_response :success
+    upload_path = URI.parse(response.parsed_body.dig("direct_upload", "url")).request_uri
+
+    put upload_path,
+      params: attachment_bytes,
+      headers: { "Content-Type" => "application/octet-stream" }
+
+    assert_response :no_content
+  end
+
   test "disk service download endpoint stays public" do
     ActiveStorage::Current.url_options = { host: "www.example.com", protocol: "https" }
     blob = ActiveStorage::Blob.create_and_upload! \
