@@ -141,7 +141,7 @@ class ActionText::Markdown::UploadsControllerTest < ActionDispatch::IntegrationT
     assert_nil pages(:welcome).reload.owning_book
 
     reset!
-    get action_text_markdown_upload_url(slug: attachment.slug)
+    get action_text_markdown_upload_path(slug: attachment.slug)
 
     assert_response :not_found
   end
