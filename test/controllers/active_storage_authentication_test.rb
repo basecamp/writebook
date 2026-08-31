@@ -2,11 +2,11 @@ require "test_helper"
 
 class ActiveStorageAuthenticationTest < ActionDispatch::IntegrationTest
   test "direct upload metadata endpoint rejects anonymous callers" do
-    get new_session_url
+    get new_session_path
     assert_response :success
 
     assert_no_difference -> { ActiveStorage::Blob.count } do
-      post rails_direct_uploads_url, params: blob_params, as: :json
+      post rails_direct_uploads_path, params: blob_params, as: :json
     end
 
     assert_response :unauthorized
@@ -16,7 +16,7 @@ class ActiveStorageAuthenticationTest < ActionDispatch::IntegrationTest
     sign_in :david
 
     assert_difference -> { ActiveStorage::Blob.count }, 1 do
-      post rails_direct_uploads_url, params: blob_params, as: :json
+      post rails_direct_uploads_path, params: blob_params, as: :json
     end
 
     assert_response :success
@@ -24,7 +24,7 @@ class ActiveStorageAuthenticationTest < ActionDispatch::IntegrationTest
 
   test "disk service upload endpoint rejects anonymous callers" do
     sign_in :david
-    post rails_direct_uploads_url, params: blob_params, as: :json
+    post rails_direct_uploads_path, params: blob_params, as: :json
     assert_response :success
     upload_path = URI.parse(response.parsed_body.dig("direct_upload", "url")).request_uri
 
@@ -38,7 +38,7 @@ class ActiveStorageAuthenticationTest < ActionDispatch::IntegrationTest
 
   test "disk service upload endpoint allows authenticated callers" do
     sign_in :david
-    post rails_direct_uploads_url, params: blob_params, as: :json
+    post rails_direct_uploads_path, params: blob_params, as: :json
     assert_response :success
     upload_path = URI.parse(response.parsed_body.dig("direct_upload", "url")).request_uri
 
