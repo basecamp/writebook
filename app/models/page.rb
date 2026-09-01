@@ -25,6 +25,10 @@ class Page < ApplicationRecord
     body.content.to_s
   end
 
+  def fingerprintable_content
+    markable
+  end
+
   private
     def plain_text
       html_body = rendered_html(markdown_source)

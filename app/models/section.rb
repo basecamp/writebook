@@ -8,4 +8,8 @@ class Section < ApplicationRecord
   def markable
     body
   end
+
+  def fingerprintable_content
+    "#{body}\0#{theme}"
+  end
 end

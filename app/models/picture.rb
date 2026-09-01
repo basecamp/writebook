@@ -12,4 +12,8 @@ class Picture < ApplicationRecord
   def markable
     caption
   end
+
+  def fingerprintable_content
+    "#{caption}\0#{image.attached? ? image.blob.checksum : nil}"
+  end
 end

@@ -10,6 +10,6 @@ module ActiveSupport
     # Setup all fixtures in test/fixtures/*.yml for all tests in alphabetical order.
     fixtures :all
 
-    include SessionTestHelper
+    include OauthTestHelper, SessionTestHelper
   end
 end

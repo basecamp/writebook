@@ -1,0 +1,30 @@
+<% content_for(:title) { "Connect a device" } %>
+
+<div class="panel shadow center margin-block-double <%= "shake" if @error %>">
+  <h1 class="margin-block-end">Connect this device?</h1>
+
+  <p class="txt-large txt-align-center"><strong><%= @grant.formatted_user_code %></strong></p>
+
+  <p>
+    A device showing this code will get full access to Writebook as
+    <strong><%= Current.user.name %></strong>.
+  </p>
+
+  <% if @error %>
+    <p class="txt-negative"><%= @error %></p>
+  <% end %>
+
+  <%= form_with url: oauth_device_verification_url, method: :patch, class: "flex flex-column gap" do |form| %>
+    <%= form.hidden_field :user_code, value: @grant.user_code %>
+
+    <label class="flex align-center gap">
+      <%= form.check_box :initiation_confirmed %>
+      I requested this code myself, just now
+    </label>
+
+    <button type="submit" class="btn btn--reversed center">Connect</button>
+  <% end %>
+
+  <%= button_to "Deny", oauth_device_verification_url(user_code: @grant.user_code),
+        method: :delete, class: "btn center margin-block" %>
+</div>
