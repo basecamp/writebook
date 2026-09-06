@@ -8,6 +8,7 @@ class Book < ApplicationRecord
   scope :published, -> { where(published: true) }
 
   enum :theme, %w[ black blue green magenta orange violet white ].index_by(&:itself), suffix: true, default: :blue
+  enum :default_view, %w[ list grid ].index_by(&:itself), suffix: true, default: :grid
 
   def press(leafable, leaf_params)
     leaves.create! leaf_params.merge(leafable: leafable)

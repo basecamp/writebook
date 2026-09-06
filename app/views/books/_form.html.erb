@@ -59,6 +59,46 @@
     </div>
   </div>
 
+  <div class="book-view-settings border-radius center pad-double fill-shade flex flex-column gap margin-block-double">
+    <div class="flex align-center gap txt-medium--responsive">
+      <%= image_tag "view-grid.svg", aria: { hidden: true }, size: 36, class: "colorize--black" %>
+
+      <div class="min-width">
+        <div class="overflow-ellipsis fill-shade"><strong>Default view</strong></div>
+      </div>
+
+      <hr class="flex-item-grow margin-none" aria-hidden="true" style="--border-style: dashed">
+
+      <div class="flex gap-half">
+        <% Book.default_views.keys.each do |view| %>
+          <label class="btn txt-small" title="<%= view.capitalize %> view">
+            <%= form.radio_button :default_view, view %>
+            <%= image_tag "view-#{view}.svg", aria: { hidden: true }, size: 20 %>
+            <span class="for-screen-reader"><%= view.capitalize %> view</span>
+          </label>
+        <% end %>
+      </div>
+    </div>
+
+    <hr class="full-width margin-block-start margin-block-end-half">
+
+    <div class="flex align-center gap txt-medium--responsive">
+      <%= image_tag "settings.svg", aria: { hidden: true }, size: 36, class: "colorize--black" %>
+
+      <div class="min-width">
+        <div class="overflow-ellipsis fill-shade"><strong>View selector</strong></div>
+      </div>
+
+      <hr class="flex-item-grow margin-none" aria-hidden="true" style="--border-style: dashed">
+
+      <label for="book_allow_view_selector" class="switch">
+        <%= form.check_box :allow_view_selector, class: "switch__input book-access__switch" %>
+        <span class="switch__btn"></span>
+        <span class="for-screen-reader">Allow users to switch between list and grid view</span>
+      </label>
+    </div>
+  </div>
+
   <div class="book-access border-radius center pad-double fill-shade flex flex-column gap margin-block-double">
     <div class="flex align-center gap txt-medium--responsive">
       <%= image_tag "eye.svg", aria: { hidden: true }, size: 36, class: "colorize--black" %>
