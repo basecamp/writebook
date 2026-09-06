@@ -46,6 +46,26 @@ class Leaf::EditableTest < ActiveSupport::TestCase
     end
   end
 
+  test "re-sending an identical body doesn't create a revision" do
+    leaves(:welcome_page).edit leafable_params: { body: "New body" }
+
+    travel 1.hour do
+      assert_no_difference -> { Edit.count } do
+        leaves(:welcome_page).edit leafable_params: { body: "New body" }
+      end
+    end
+  end
+
+  test "re-sending an identical section body doesn't create a revision" do
+    leaves(:welcome_section).edit leafable_params: { body: "New body" }
+
+    travel 1.hour do
+      assert_no_difference -> { Edit.count } do
+        leaves(:welcome_section).edit leafable_params: { body: "New body" }
+      end
+    end
+  end
+
   test "editing a leafable with an attachment includes the attachments in the new version" do
     assert leaves(:reading_picture).picture.image.attached?
 

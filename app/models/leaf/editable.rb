@@ -28,7 +28,12 @@ module Leaf::Editable
 
     def will_change_leafable?(leafable_params)
       leafable_params.select do |key, value|
-        leafable.attributes[key.to_s] != value
+        # Markdown attributes live in an association, not a column, so attributes[] can't see them
+        if markdown = leafable.safe_markdown_attribute(key)
+          markdown.content.to_s != value.to_s
+        else
+          leafable.attributes[key.to_s] != value
+        end
       end.present?
     end
 

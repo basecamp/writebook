@@ -24,6 +24,8 @@ Rails.application.routes.draw do
     resource :bookmark, controller: "books/bookmarks", only: :show
 
     scope module: "books" do
+      resources :leaves, only: :index
+
       namespace :leaves do
         resources :moves, only: :create
       end
@@ -33,7 +35,11 @@ Rails.application.routes.draw do
 
     resources :sections
     resources :pictures
-    resources :pages
+    resources :pages do
+      scope module: "pages" do
+        resources :uploads, only: :create
+      end
+    end
   end
 
   get "/:id/:slug", to: "books#show", constraints: { id: /\d+/ }, as: :slugged_book
@@ -57,6 +63,7 @@ Rails.application.routes.draw do
   resources :users do
     scope module: "users" do
       resource :profile
+      resource :bearer_key, only: :create
     end
   end
 

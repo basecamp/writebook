@@ -1,5 +1,6 @@
 class BooksController < ApplicationController
   allow_unauthenticated_access only: %i[ index show ]
+  allow_bearer_key_access only: :show
 
   before_action :ensure_index_is_not_empty, only: :index
   before_action :set_book, only: %i[ show edit update destroy ]

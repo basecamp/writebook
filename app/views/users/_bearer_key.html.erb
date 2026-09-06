@@ -1,0 +1,25 @@
+<div class="flex flex-column align-center gap txt-medium--responsive">
+  <label class="flex flex-column gap full-width">
+    <div class="flex align-center gap">
+      <%= translation_button(:bearer_key) %>
+      <strong id="bearer_key_label" class="txt-align-start">Your API key for scripts that write to your books</strong>
+    </div>
+    <span class="flex align-center gap margin-inline">
+      <input type="text" class="input fill-white" id="bearer_key" value="<%= user.bearer_key %>" aria-labelledby="bearer_key_label" readonly>
+    </span>
+  </label>
+
+  <div class="flex align-center gap">
+    <%= button_to_copy_to_clipboard(user.bearer_key) do %>
+      <%= image_tag "copy-paste.svg", aria: { hidden: "true" }, size: 24, class: "colorize--black" %>
+      <span class="for-screen-reader">Copy API key</span>
+    <% end %>
+
+    <%= button_to user_bearer_key_path(user), class: "btn btn--negative", data: {
+          turbo_confirm: "Are you sure? Any script using the current key will stop working until you give it the new one."
+        } do %>
+      <%= image_tag "arrow-reverse.svg", aria: { hidden: "true" }, size: 24, class: "colorize--black" %>
+      <span class="for-screen-reader">Reset API key</span>
+    <% end %>
+  </div>
+</div>

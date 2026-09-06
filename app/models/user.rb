@@ -3,6 +3,7 @@ class User < ApplicationRecord
 
   has_many :sessions, dependent: :destroy
   has_secure_password validations: false
+  has_secure_token :bearer_key
 
   has_many :accesses, dependent: :destroy
   has_many :books, through: :accesses

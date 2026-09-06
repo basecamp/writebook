@@ -15,6 +15,10 @@ class PagesController < LeafablesController
     end
 
     def leafable_params
-      params.fetch(:page, {}).permit(:body)
+      if leaf_document
+        { body: leaf_document.body }
+      else
+        params.fetch(:page, {}).permit(:body)
+      end
     end
 end
