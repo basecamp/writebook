@@ -59,7 +59,7 @@
       <% else %>
         <span class="book__cover-wrapper">
           <%= image_tag "empty-cover.png", alt: "Book cover", class: "book__cover margin-block-none center" %>
-          <span class="book__title overflow-line-clamp pad txt-align-start txt-tight-lines"" style="--lines: 6" aria-hidden="true"><%= @book.title %></span>
+          <span class="book__title overflow-line-clamp pad txt-align-start txt-tight-lines" style="--lines: 6" aria-hidden="true"><%= @book.title %></span>
         </span>
       <% end %>
 
@@ -69,7 +69,7 @@
         <% end %>
       <% end %>
 
-      <span data-controller="edit-mode" data-edit-mode-editing-class="edit-mode" />
+      <span data-controller="edit-mode" data-edit-mode-editing-class="edit-mode"></span>
     </div>
   </aside>
 
