@@ -19,6 +19,16 @@ Rails.application.routes.draw do
     end
   end
 
+  # Generate a self-contained static HTML version of the published library.
+  # Admin-only (see StaticExportsController); the result page tells the
+  # operator where the files are and how to host them. #download streams the
+  # generated site as a .zip; #preview serves it from inside the app under
+  # /static-site/ so the operator can see it in a browser tab.
+  resource :static_export, only: %i[ show create ], controller: "static_exports"
+  get "/static_export/result", to: "static_exports#result", as: :static_export_result
+  get "/static_export/download", to: "static_exports#download", as: :static_export_download
+  get "/static-site/(*path)", to: "static_exports#preview", as: :static_site_preview, defaults: { path: "index.html" }
+
   resources :books, except: %i[ index show ] do
     resource :publication, controller: "books/publications", only: %i[ show edit update ]
     resource :bookmark, controller: "books/bookmarks", only: :show
