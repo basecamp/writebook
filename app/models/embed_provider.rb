@@ -77,8 +77,14 @@ class EmbedProvider
       !configured_entries.nil?
     end
 
+    # Resolved once per distinct configuration: the scrubber, the CSP directive
+    # and the fragment cache key all call this several times per request, and
+    # a rejected entry should be logged once, not per call.
     def all
-      Array(configured_entries).filter_map { |entry| normalize_config(entry) }.map { |attributes| new(**attributes) }
+      entries = configured_entries
+      resolved = @resolved
+      resolved = @resolved = [ entries, build(entries) ] unless resolved&.first == entries
+      resolved.last
     end
 
     # The provider vouching for +src+, or nil. Used by the scrubber both to decide
@@ -137,6 +143,10 @@ class EmbedProvider
     end
 
     private
+      def build(entries)
+        Array(entries).filter_map { |entry| normalize_config(entry) }.map { |attributes| new(**attributes) }.freeze
+      end
+
       def configured_entries
         environment_entries || Account.first&.embed_providers
       end

@@ -172,6 +172,33 @@ class EmbedProviderTest < ActiveSupport::TestCase
     assert_not EmbedProvider.allows?("https://x.example/e/1")
   end
 
+  test "a rejected entry is logged once per distinct configuration, not per call" do
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"name":"typo-#{SecureRandom.hex(4)}","hosts":["*"],"path_prefix":"/e"}])
+
+    log = StringIO.new
+    capture = ActiveSupport::Logger.new(log)
+    Rails.logger.broadcast_to(capture)
+    3.times { EmbedProvider.all }
+    3.times { EmbedProvider.csp_frame_sources }
+    Rails.logger.stop_broadcasting_to(capture)
+
+    assert_equal 1, log.string.scan("ignoring invalid provider entry").size, log.string
+  end
+
+  test "a changed configuration is picked up without a restart" do
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"hosts":["a.example"],"path_prefix":"/a"}])
+    assert EmbedProvider.allows?("https://a.example/a/1")
+
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"hosts":["b.example"],"path_prefix":"/b"}])
+    assert_not EmbedProvider.allows?("https://a.example/a/1")
+    assert EmbedProvider.allows?("https://b.example/b/1")
+
+    ENV.delete("WRITEBOOK_EMBED_PROVIDERS")
+    accounts(:signal).update!(embed_providers: [ { "hosts" => [ "c.example" ], "path_prefix" => "/c" } ])
+    assert EmbedProvider.allows?("https://c.example/c/1")
+    assert_not EmbedProvider.allows?("https://b.example/b/1")
+  end
+
   test "a single provider object (not wrapped in an array) is accepted" do
     ENV["WRITEBOOK_EMBED_PROVIDERS"] =
       %({"name":"Wistia","hosts":["fast.wistia.net"],"path_prefix":"/embed/"})
