@@ -92,10 +92,10 @@ class EmbedProvider
     # Digest of the effective table, for fragment cache keys wrapping scrubbed
     # content: a cached fragment skips the scrubber, so it must be invalidated
     # whenever the policy that produced it changes (a WRITEBOOK_EMBED_PROVIDERS
-    # edit, or a shipped default). Order-insensitive so reordering entries
-    # doesn't bust caches.
+    # edit, or a shipped default). Taken in resolution order because match is
+    # first-match-wins: reordering overlapping entries changes the policy.
     def cache_version
-      ActiveSupport::Digest.hexdigest all.map(&:signature).sort.join("\n")
+      ActiveSupport::Digest.hexdigest all.map(&:signature).join("\n")
     end
 
     # Parses +src+ into a URI only when it is a fetchable https URL, on the

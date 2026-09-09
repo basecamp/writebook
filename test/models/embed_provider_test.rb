@@ -1,8 +1,6 @@
 require "test_helper"
 
 class EmbedProviderTest < ActiveSupport::TestCase
-  teardown { ENV.delete("WRITEBOOK_EMBED_PROVIDERS") }
-
   # --- default providers: valid embeds pass ---------------------------------
 
   {
@@ -182,14 +180,16 @@ class EmbedProviderTest < ActiveSupport::TestCase
     assert_not_equal with_host, EmbedProvider.cache_version
   end
 
-  test "cache_version ignores the order of configured entries" do
+  test "cache_version follows resolution order, since match is first-match-wins" do
     ENV["WRITEBOOK_EMBED_PROVIDERS"] =
-      %([{"hosts":["a.example"],"path_prefix":"/a"},{"hosts":["b.example"],"path_prefix":"/b"}])
-    ab = EmbedProvider.cache_version
+      %([{"hosts":["x.example"],"path_prefix":"/e","attributes":["src"]},{"hosts":["x.example"],"path_prefix":"/e"}])
+    narrow_first = EmbedProvider.cache_version
+    assert_equal %w[src], EmbedProvider.match("https://x.example/e/1").attributes
 
     ENV["WRITEBOOK_EMBED_PROVIDERS"] =
-      %([{"hosts":["b.example"],"path_prefix":"/b"},{"hosts":["a.example"],"path_prefix":"/a"}])
-    assert_equal ab, EmbedProvider.cache_version
+      %([{"hosts":["x.example"],"path_prefix":"/e"},{"hosts":["x.example"],"path_prefix":"/e","attributes":["src"]}])
+    assert_not_equal narrow_first, EmbedProvider.cache_version
+    assert_equal EmbedProvider::PERMITTED_ATTRIBUTES, EmbedProvider.match("https://x.example/e/1").attributes
   end
 
   test "wildcard, whitespace and over-broad config entries are rejected, defaults survive" do
