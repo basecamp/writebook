@@ -70,21 +70,17 @@ class EmbedProvider
     }
   ].freeze
 
+  Resolution = Struct.new(:source, :entries, :providers)
+
   class << self
     # True once a provider table is configured — by environment or by the
     # account — and the allowlist is enforced. False leaves embeds permissive.
     def configured?
-      !configured_entries.nil?
+      !resolution.entries.nil?
     end
 
-    # Resolved once per distinct configuration: the scrubber, the CSP directive
-    # and the fragment cache key all call this several times per request, and
-    # a rejected entry should be logged once, not per call.
     def all
-      entries = configured_entries
-      resolved = @resolved
-      resolved = @resolved = [ entries, build(entries) ] unless resolved&.first == entries
-      resolved.last
+      resolution.providers
     end
 
     # The provider vouching for +src+, or nil. Used by the scrubber both to decide
@@ -143,23 +139,36 @@ class EmbedProvider
     end
 
     private
-      def build(entries)
-        Array(entries).filter_map { |entry| normalize_config(entry) }.map { |attributes| new(**attributes) }.freeze
+      # Resolved once per distinct configuration: the scrubber, the CSP directive
+      # and the fragment cache key all consult the table several times per
+      # request, and a parse failure or a rejected entry should be logged once,
+      # not per call. A changed environment value or account row is a new
+      # source, so it is picked up on the next read without a restart.
+      def resolution
+        source = [ ENV["WRITEBOOK_EMBED_PROVIDERS"].presence, Account.first&.embed_providers ]
+        resolved = @resolution
+        resolved = @resolution = resolve(source) unless resolved&.source == source
+        resolved
       end
 
-      def configured_entries
-        environment_entries || Account.first&.embed_providers
+      def resolve(source)
+        raw, account_entries = source
+        entries = parse_environment(raw) || account_entries
+        Resolution.new(source, entries, build(entries)).freeze
       end
 
-      def environment_entries
-        raw = ENV["WRITEBOOK_EMBED_PROVIDERS"]
-        return if raw.blank?
-
-        parsed = JSON.parse(raw)
-        parsed.is_a?(Array) ? parsed : [ parsed ]
+      def parse_environment(raw)
+        if raw
+          parsed = JSON.parse(raw)
+          parsed.is_a?(Array) ? parsed : [ parsed ]
+        end
       rescue JSON::ParserError
         Rails.logger.warn("[EmbedProvider] WRITEBOOK_EMBED_PROVIDERS is not valid JSON; ignoring")
         nil
+      end
+
+      def build(entries)
+        Array(entries).filter_map { |entry| normalize_config(entry) }.map { |attributes| new(**attributes) }.freeze
       end
 
       def normalize_config(entry)

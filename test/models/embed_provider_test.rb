@@ -172,17 +172,20 @@ class EmbedProviderTest < ActiveSupport::TestCase
     assert_not EmbedProvider.allows?("https://x.example/e/1")
   end
 
-  test "a rejected entry is logged once per distinct configuration, not per call" do
+  test "a rejected entry or unparsable value is logged once per distinct configuration, not per call" do
     ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"name":"typo-#{SecureRandom.hex(4)}","hosts":["*"],"path_prefix":"/e"}])
+    log = capture_embed_provider_log do
+      3.times { EmbedProvider.all }
+      3.times { EmbedProvider.csp_frame_sources }
+    end
+    assert_equal 1, log.scan("ignoring invalid provider entry").size, log
 
-    log = StringIO.new
-    capture = ActiveSupport::Logger.new(log)
-    Rails.logger.broadcast_to(capture)
-    3.times { EmbedProvider.all }
-    3.times { EmbedProvider.csp_frame_sources }
-    Rails.logger.stop_broadcasting_to(capture)
-
-    assert_equal 1, log.string.scan("ignoring invalid provider entry").size, log.string
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] = "{not valid json #{SecureRandom.hex(4)}"
+    log = capture_embed_provider_log do
+      3.times { EmbedProvider.configured? }
+      3.times { EmbedProvider.all }
+    end
+    assert_equal 1, log.scan("not valid JSON").size, log
   end
 
   test "a changed configuration is picked up without a restart" do
@@ -276,4 +279,15 @@ class EmbedProviderTest < ActiveSupport::TestCase
     assert_not_equal narrow_first, EmbedProvider.cache_version
     assert_equal EmbedProvider::PERMITTED_ATTRIBUTES, EmbedProvider.match("https://x.example/e/1").attributes
   end
+
+  private
+    def capture_embed_provider_log
+      log = StringIO.new
+      capture = ActiveSupport::Logger.new(log)
+      Rails.logger.broadcast_to(capture)
+      yield
+      log.string
+    ensure
+      Rails.logger.stop_broadcasting_to(capture)
+    end
 end
