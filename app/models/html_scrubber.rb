@@ -13,6 +13,15 @@ class HtmlScrubber < Rails::Html::PermitScrubber
     controls autoplay muted playsinline allowfullscreen frameborder loading open reversed
   ].freeze
 
+  # Bump whenever the scrubbing rules tighten. Fragment caches wrapping scrubbed
+  # content key on cache_version, so a fragment rendered under the old rules is
+  # re-scrubbed rather than served verbatim.
+  POLICY_VERSION = 1
+
+  def self.cache_version
+    "#{POLICY_VERSION}-#{EmbedProvider.cache_version}"
+  end
+
   def initialize
     super
     self.tags = Rails::Html::WhiteListSanitizer.allowed_tags + %w[

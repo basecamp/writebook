@@ -143,6 +143,33 @@ class EmbedProviderTest < ActiveSupport::TestCase
     assert_includes EmbedProvider.csp_frame_sources, "https://fast.wistia.net"
   end
 
+  # --- fragment cache version tracks the effective table --------------------
+
+  test "cache_version is stable for the same table and changes with it" do
+    before = EmbedProvider.cache_version
+    assert_equal before, EmbedProvider.cache_version
+
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"name":"x","hosts":["x.example"],"path_prefix":"/e"}])
+    with_host = EmbedProvider.cache_version
+    assert_not_equal before, with_host
+
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"name":"x","hosts":["x.example"],"path_prefix":"/e","attributes":["src"]}])
+    assert_not_equal with_host, EmbedProvider.cache_version
+
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"name":"x","hosts":["x.example"],"path_prefix":"/f"}])
+    assert_not_equal with_host, EmbedProvider.cache_version
+  end
+
+  test "cache_version ignores the order of configured entries" do
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] =
+      %([{"hosts":["a.example"],"path_prefix":"/a"},{"hosts":["b.example"],"path_prefix":"/b"}])
+    ab = EmbedProvider.cache_version
+
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] =
+      %([{"hosts":["b.example"],"path_prefix":"/b"},{"hosts":["a.example"],"path_prefix":"/a"}])
+    assert_equal ab, EmbedProvider.cache_version
+  end
+
   test "wildcard, whitespace and over-broad config entries are rejected, defaults survive" do
     [
       %([{"name":"a","hosts":["*"],"path_prefix":"/e"}]),

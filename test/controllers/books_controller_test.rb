@@ -5,6 +5,8 @@ class BooksControllerTest < ActionDispatch::IntegrationTest
     sign_in :kevin
   end
 
+  teardown { ENV.delete("WRITEBOOK_EMBED_PROVIDERS") }
+
   test "index lists the current user's books" do
     get root_url
 
@@ -108,10 +110,41 @@ class BooksControllerTest < ActionDispatch::IntegrationTest
     assert_not_in_body "&lt;"
   end
 
+  test "show re-scrubs cached leaves when the embed policy narrows" do
+    with_fragment_caching do
+      leaves(:welcome_page).leafable.update!(body: %(<iframe src="https://x.example/embed/1"></iframe>))
+
+      ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"hosts":["x.example"],"path_prefix":"/embed"}])
+      writes = 0
+      ActiveSupport::Notifications.subscribed(->(*) { writes += 1 }, "write_fragment.action_controller") do
+        get book_slug_path(books(:handbook))
+      end
+      assert_response :success
+      assert_select "iframe[src=?]", "https://x.example/embed/1"
+      assert_operator writes, :>, 0, "expected the page to be fragment cached"
+
+      ENV.delete("WRITEBOOK_EMBED_PROVIDERS")
+      get book_slug_path(books(:handbook))
+      assert_response :success
+      assert_select "iframe", count: 0
+    end
+  end
+
   test "show includes link to markdown format" do
     get book_slug_path(books(:handbook))
 
     assert_response :success
     assert_select "link[rel=\"alternate\"][type=\"text/markdown\"][href=\"#{book_slug_path(books(:handbook), format: :md)}\"]"
   end
+
+  private
+    def with_fragment_caching
+      perform_caching, cache_store = ActionController::Base.perform_caching, ActionController::Base.cache_store
+      ActionController::Base.perform_caching = true
+      ActionController::Base.cache_store = :memory_store
+      yield
+    ensure
+      ActionController::Base.perform_caching = perform_caching
+      ActionController::Base.cache_store = cache_store
+    end
 end

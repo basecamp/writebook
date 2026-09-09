@@ -89,6 +89,15 @@ class EmbedProvider
       all.flat_map(&:csp_sources).uniq
     end
 
+    # Digest of the effective table, for fragment cache keys wrapping scrubbed
+    # content: a cached fragment skips the scrubber, so it must be invalidated
+    # whenever the policy that produced it changes (a WRITEBOOK_EMBED_PROVIDERS
+    # edit, or a shipped default). Order-insensitive so reordering entries
+    # doesn't bust caches.
+    def cache_version
+      ActiveSupport::Digest.hexdigest all.map(&:signature).sort.join("\n")
+    end
+
     # Parses +src+ into a URI only when it is a fetchable https URL, on the
     # default port, with a host and no embedded userinfo (which would let
     # "https://youtube.com@evil.com/…" read as trusted). Anything else —
@@ -161,6 +170,10 @@ class EmbedProvider
 
   def csp_sources
     hosts.map { |host| "https://#{host}" }
+  end
+
+  def signature
+    [ hosts, path_prefix, attributes ].to_json
   end
 
   private

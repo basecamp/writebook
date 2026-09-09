@@ -1,4 +1,4 @@
-<% cache [ leaf, leaf.book, leaf.book.editable? ] do %>
+<% cache [ leaf, leaf.book, leaf.book.editable?, HtmlScrubber.cache_version ] do %>
   <%= leaf_item_tag(leaf) do %>
     <span class="btn btn--link arrangement__handle txt-small">
       <%= image_tag "handle.svg", aria: { hidden: true }, size: 24 %>

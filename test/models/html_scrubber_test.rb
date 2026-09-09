@@ -9,6 +9,16 @@ class HtmlScrubberTest < ActiveSupport::TestCase
     scrub(ActionText::Markdown.renderer.call.render(markdown))
   end
 
+  test "cache_version changes with the embed provider table" do
+    before = HtmlScrubber.cache_version
+    assert_includes before, EmbedProvider.cache_version
+
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"hosts":["x.example"],"path_prefix":"/e"}])
+    assert_not_equal before, HtmlScrubber.cache_version
+  ensure
+    ENV.delete("WRITEBOOK_EMBED_PROVIDERS")
+  end
+
   test "strips inline event handlers on allowed tags" do
     %w[iframe img video audio details].each do |tag|
       result = scrub(%(<#{tag} onload="alert(1)" onerror="alert(1)"></#{tag}>))

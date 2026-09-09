@@ -49,7 +49,7 @@
   </nav>
 <% end %>
 
-<% cache [ @book, @book.editable? ] do %>
+<% cache [ @book, @book.editable?, HtmlScrubber.cache_version ] do %>
   <aside class="txt-align-center margin-block">
     <div class="book__sidebar <%= "theme--#{@book&.theme}" unless @book.cover.attached? %>">
       <% if @book.cover.attached? %>
