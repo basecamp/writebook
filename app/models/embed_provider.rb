@@ -132,9 +132,9 @@ class EmbedProvider
 
         hosts = Array(entry["hosts"] || entry["host"]).map { |host| host.to_s.strip.downcase }
         hosts = hosts.select { |host| host.match?(HOST_FORMAT) }
-        path_prefix = entry["path_prefix"].to_s
+        path_prefix = canonical_path_prefix(entry["path_prefix"])
 
-        if hosts.empty? || !valid_path_prefix?(path_prefix)
+        if hosts.empty? || path_prefix.nil?
           Rails.logger.warn("[EmbedProvider] ignoring invalid provider entry: #{entry.inspect}")
           return
         end
@@ -148,8 +148,18 @@ class EmbedProvider
         }
       end
 
-      def valid_path_prefix?(prefix)
-        prefix.start_with?("/") && prefix.length > 1
+      # Canonical form of an operator-supplied prefix: leading slash, duplicate
+      # slashes collapsed, no trailing slash. Nil — the entry is dropped — for a
+      # dot segment or anything that reduces to the root: a browser resolves
+      # "/.", "/./" and "//" to "/", so storing them verbatim would turn the
+      # entry into a whole-host allowance.
+      def canonical_path_prefix(prefix)
+        prefix = prefix.to_s
+        segments = prefix.split("/").reject(&:empty?)
+
+        if prefix.start_with?("/") && segments.any? && (segments & %w[. ..]).empty?
+          "/#{segments.join("/")}"
+        end
       end
   end
 
@@ -158,7 +168,7 @@ class EmbedProvider
   def initialize(name:, hosts:, path_prefix:, attributes: nil)
     @name = name
     @hosts = Array(hosts).map { |host| normalize_host(host) }
-    @path_prefix = path_prefix.chomp("/")
+    @path_prefix = path_prefix
     # Intersect with the master list so no provider — default or operator-supplied
     # — can widen the attribute surface beyond what the scrubber vets.
     @attributes = (attributes || PERMITTED_ATTRIBUTES) & PERMITTED_ATTRIBUTES

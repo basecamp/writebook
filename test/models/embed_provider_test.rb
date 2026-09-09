@@ -143,6 +143,28 @@ class EmbedProviderTest < ActiveSupport::TestCase
     assert_includes EmbedProvider.csp_frame_sources, "https://fast.wistia.net"
   end
 
+  test "root-equivalent path prefixes are rejected, defaults survive" do
+    %w[/ /. /./ // /embed/.. /embed/../ /embed/./.. embed].each do |prefix|
+      ENV.delete("WRITEBOOK_EMBED_PROVIDERS")
+      defaults = EmbedProvider.csp_frame_sources
+      ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"name":"x","hosts":["x.example"],"path_prefix":"#{prefix}"}])
+
+      assert_equal defaults, EmbedProvider.csp_frame_sources, prefix
+      assert_not EmbedProvider.allows?("https://x.example/anything"), prefix
+      assert_not EmbedProvider.allows?("https://x.example/./anything"), prefix
+      assert_not EmbedProvider.allows?("https://x.example//anything"), prefix
+    end
+  end
+
+  test "a configured path prefix is stored in canonical form" do
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"name":"x","hosts":["x.example"],"path_prefix":"/embed//x/"}])
+
+    provider = EmbedProvider.match("https://x.example/embed/x/1")
+    assert_equal "/embed/x", provider.path_prefix
+    assert_not EmbedProvider.allows?("https://x.example/embed/xy")
+    assert_not EmbedProvider.allows?("https://x.example/embed/../x/1")
+  end
+
   # --- fragment cache version tracks the effective table --------------------
 
   test "cache_version is stable for the same table and changes with it" do
