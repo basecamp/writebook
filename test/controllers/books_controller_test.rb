@@ -108,11 +108,10 @@ class BooksControllerTest < ActionDispatch::IntegrationTest
     assert_not_in_body "&lt;"
   end
 
-  test "show re-scrubs cached leaves when the embed policy narrows" do
+  test "show re-scrubs cached leaves when an allowlist is configured over permissive embeds" do
     with_fragment_caching do
       leaves(:welcome_page).leafable.update!(body: %(<iframe src="https://x.example/embed/1"></iframe>))
 
-      ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"hosts":["x.example"],"path_prefix":"/embed"}])
       writes = 0
       ActiveSupport::Notifications.subscribed(->(*) { writes += 1 }, "write_fragment.action_controller") do
         get book_slug_path(books(:handbook))
@@ -121,9 +120,23 @@ class BooksControllerTest < ActionDispatch::IntegrationTest
       assert_select "iframe[src=?]", "https://x.example/embed/1"
       assert_operator writes, :>, 0, "expected the page to be fragment cached"
 
-      ENV.delete("WRITEBOOK_EMBED_PROVIDERS")
+      ENV["WRITEBOOK_EMBED_PROVIDERS"] = EmbedProvider::DEFAULTS.to_json
       get book_slug_path(books(:handbook))
       assert_response :success
+      assert_select "iframe", count: 0
+    end
+  end
+
+  test "show re-scrubs cached leaves when the allowlist narrows" do
+    with_fragment_caching do
+      leaves(:welcome_page).leafable.update!(body: %(<iframe src="https://x.example/embed/1"></iframe>))
+
+      ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"hosts":["x.example"],"path_prefix":"/embed"}])
+      get book_slug_path(books(:handbook))
+      assert_select "iframe[src=?]", "https://x.example/embed/1"
+
+      ENV["WRITEBOOK_EMBED_PROVIDERS"] = EmbedProvider::DEFAULTS.to_json
+      get book_slug_path(books(:handbook))
       assert_select "iframe", count: 0
     end
   end

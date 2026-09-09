@@ -1,6 +1,58 @@
 require "test_helper"
 
 class EmbedProviderTest < ActiveSupport::TestCase
+  setup { accounts(:signal).update!(embed_providers: EmbedProvider::DEFAULTS) }
+
+  # --- opt-in: permissive until a table is configured -----------------------
+
+  test "permissive when neither the environment nor the account configures a table" do
+    accounts(:signal).update!(embed_providers: nil)
+
+    assert_not EmbedProvider.configured?
+    assert_empty EmbedProvider.all
+    assert_nil EmbedProvider.csp_frame_sources
+    assert_equal "permissive", EmbedProvider.cache_version
+  end
+
+  test "permissive on an install with no account row at all" do
+    Account.delete_all
+
+    assert_not EmbedProvider.configured?
+    assert_nil EmbedProvider.csp_frame_sources
+  end
+
+  test "the account setting configures the allowlist" do
+    assert EmbedProvider.configured?
+    assert EmbedProvider.allows?("https://www.youtube.com/embed/abc")
+    assert_not EmbedProvider.allows?("https://evil.com/embed/abc")
+  end
+
+  test "the environment configures the allowlist on an install with no setting" do
+    accounts(:signal).update!(embed_providers: nil)
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"name":"Wistia","hosts":["fast.wistia.net"],"path_prefix":"/embed/"}])
+
+    assert EmbedProvider.configured?
+    assert EmbedProvider.allows?("https://fast.wistia.net/embed/iframe/abc")
+    assert_equal %w[https://fast.wistia.net], EmbedProvider.csp_frame_sources
+  end
+
+  test "the environment replaces the account setting rather than extending it" do
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"name":"Wistia","hosts":["fast.wistia.net"],"path_prefix":"/embed/"}])
+
+    assert EmbedProvider.allows?("https://fast.wistia.net/embed/iframe/abc")
+    assert_not EmbedProvider.allows?("https://www.youtube.com/embed/abc")
+    assert_equal %w[https://fast.wistia.net], EmbedProvider.csp_frame_sources
+  end
+
+  test "the curated defaults are config entries, so they round-trip through the environment" do
+    accounts(:signal).update!(embed_providers: nil)
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] = EmbedProvider::DEFAULTS.to_json
+
+    assert EmbedProvider.allows?("https://www.youtube.com/embed/abc")
+    assert_equal EmbedProvider::DEFAULTS.flat_map { |entry| entry["hosts"].map { |host| "https://#{host}" } },
+      EmbedProvider.csp_frame_sources
+  end
+
   # --- default providers: valid embeds pass ---------------------------------
 
   {
@@ -86,7 +138,7 @@ class EmbedProviderTest < ActiveSupport::TestCase
 
   # --- CSP frame-src derives from the same table ----------------------------
 
-  test "csp_frame_sources reflects exactly the default table" do
+  test "csp_frame_sources reflects exactly the configured table" do
     assert_equal %w[
       https://youtube.com https://www.youtube.com
       https://youtube-nocookie.com https://www.youtube-nocookie.com
@@ -96,21 +148,7 @@ class EmbedProviderTest < ActiveSupport::TestCase
     ], EmbedProvider.csp_frame_sources
   end
 
-  # --- per-install config extends BOTH scrubber and CSP ---------------------
-
-  test "operator-configured provider extends both the scrubber allowance and CSP" do
-    ENV["WRITEBOOK_EMBED_PROVIDERS"] =
-      %([{"name":"Wistia","hosts":["fast.wistia.net"],"path_prefix":"/embed/"}])
-
-    # scrubber allowance
-    assert EmbedProvider.allows?("https://fast.wistia.net/embed/iframe/abc123")
-    assert_not EmbedProvider.allows?("https://fast.wistia.net/other/abc123")
-
-    # CSP directive — same table, so the host is now present too
-    assert_includes EmbedProvider.csp_frame_sources, "https://fast.wistia.net"
-    # defaults still present
-    assert_includes EmbedProvider.csp_frame_sources, "https://www.youtube.com"
-  end
+  # --- config validation -----------------------------------------------------
 
   test "default providers carry only the vetted attribute set" do
     provider = EmbedProvider.match("https://www.youtube.com/embed/abc")
@@ -120,7 +158,7 @@ class EmbedProviderTest < ActiveSupport::TestCase
     end
   end
 
-  test "operator config cannot reintroduce forbidden attributes" do
+  test "config cannot reintroduce forbidden attributes" do
     ENV["WRITEBOOK_EMBED_PROVIDERS"] =
       %([{"name":"X","hosts":["x.example"],"path_prefix":"/e","attributes":["src","srcdoc","sandbox","onload","style","allow","referrerpolicy"]}])
 
@@ -128,7 +166,7 @@ class EmbedProviderTest < ActiveSupport::TestCase
     assert_equal %w[src], provider.attributes
   end
 
-  test "invalid config json is ignored, defaults survive" do
+  test "invalid environment json is ignored, the account setting still applies" do
     ENV["WRITEBOOK_EMBED_PROVIDERS"] = "{not valid json"
     assert EmbedProvider.allows?("https://www.youtube.com/embed/abc")
     assert_not EmbedProvider.allows?("https://x.example/e/1")
@@ -141,13 +179,12 @@ class EmbedProviderTest < ActiveSupport::TestCase
     assert_includes EmbedProvider.csp_frame_sources, "https://fast.wistia.net"
   end
 
-  test "root-equivalent path prefixes are rejected, defaults survive" do
+  test "root-equivalent path prefixes are rejected and the table fails closed" do
     %w[/ /. /./ // /embed/.. /embed/../ /embed/./.. embed].each do |prefix|
-      ENV.delete("WRITEBOOK_EMBED_PROVIDERS")
-      defaults = EmbedProvider.csp_frame_sources
       ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"name":"x","hosts":["x.example"],"path_prefix":"#{prefix}"}])
 
-      assert_equal defaults, EmbedProvider.csp_frame_sources, prefix
+      assert EmbedProvider.configured?, prefix
+      assert_equal [ :none ], EmbedProvider.csp_frame_sources, prefix
       assert_not EmbedProvider.allows?("https://x.example/anything"), prefix
       assert_not EmbedProvider.allows?("https://x.example/./anything"), prefix
       assert_not EmbedProvider.allows?("https://x.example//anything"), prefix
@@ -163,15 +200,36 @@ class EmbedProviderTest < ActiveSupport::TestCase
     assert_not EmbedProvider.allows?("https://x.example/embed/../x/1")
   end
 
-  # --- fragment cache version tracks the effective table --------------------
+  test "wildcard, whitespace and over-broad config entries are rejected and the table fails closed" do
+    [
+      %([{"name":"a","hosts":["*"],"path_prefix":"/e"}]),
+      %([{"name":"b","hosts":["*.example.com"],"path_prefix":"/e"}]),
+      %([{"name":"c","hosts":["x.example bad"],"path_prefix":"/e"}]),
+      %([{"name":"d","hosts":["x.example"],"path_prefix":"/"}]),
+      %([{"name":"e","hosts":["127.1"],"path_prefix":"/e"}]),
+      %([{"name":"f","hosts":["0x7f.1"],"path_prefix":"/e"}])
+    ].each do |config|
+      ENV["WRITEBOOK_EMBED_PROVIDERS"] = config
+      # A fully-rejected entry leaves a configured but empty table — no wildcard,
+      # no whitespace, no IP-literal, and no path-prefix-of-"/" catch-all leaks
+      # in, and nothing falls back to a wider source.
+      assert_equal [ :none ], EmbedProvider.csp_frame_sources, config
+      assert_not EmbedProvider.allows?("https://x.example/anything"), config
+    end
+  end
 
-  test "cache_version is stable for the same table and changes with it" do
-    before = EmbedProvider.cache_version
-    assert_equal before, EmbedProvider.cache_version
+  # --- fragment cache version tracks the effective policy -------------------
+
+  test "cache_version distinguishes permissive from configured and follows the table" do
+    configured = EmbedProvider.cache_version
+    assert_equal configured, EmbedProvider.cache_version
+
+    accounts(:signal).update!(embed_providers: nil)
+    assert_equal "permissive", EmbedProvider.cache_version
 
     ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"name":"x","hosts":["x.example"],"path_prefix":"/e"}])
     with_host = EmbedProvider.cache_version
-    assert_not_equal before, with_host
+    assert_not_equal configured, with_host
 
     ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"name":"x","hosts":["x.example"],"path_prefix":"/e","attributes":["src"]}])
     assert_not_equal with_host, EmbedProvider.cache_version
@@ -190,24 +248,5 @@ class EmbedProviderTest < ActiveSupport::TestCase
       %([{"hosts":["x.example"],"path_prefix":"/e"},{"hosts":["x.example"],"path_prefix":"/e","attributes":["src"]}])
     assert_not_equal narrow_first, EmbedProvider.cache_version
     assert_equal EmbedProvider::PERMITTED_ATTRIBUTES, EmbedProvider.match("https://x.example/e/1").attributes
-  end
-
-  test "wildcard, whitespace and over-broad config entries are rejected, defaults survive" do
-    [
-      %([{"name":"a","hosts":["*"],"path_prefix":"/e"}]),
-      %([{"name":"b","hosts":["*.example.com"],"path_prefix":"/e"}]),
-      %([{"name":"c","hosts":["x.example bad"],"path_prefix":"/e"}]),
-      %([{"name":"d","hosts":["x.example"],"path_prefix":"/"}]),
-      %([{"name":"e","hosts":["127.1"],"path_prefix":"/e"}]),
-      %([{"name":"f","hosts":["0x7f.1"],"path_prefix":"/e"}])
-    ].each do |config|
-      ENV.delete("WRITEBOOK_EMBED_PROVIDERS")
-      defaults = EmbedProvider.csp_frame_sources
-      ENV["WRITEBOOK_EMBED_PROVIDERS"] = config
-      # A fully-rejected entry leaves exactly the defaults — no wildcard, no
-      # whitespace, no IP-literal, and no path-prefix-of-"/" catch-all leaks in.
-      assert_equal defaults, EmbedProvider.csp_frame_sources, config
-      assert_not EmbedProvider.allows?("https://x.example/anything"), config
-    end
   end
 end

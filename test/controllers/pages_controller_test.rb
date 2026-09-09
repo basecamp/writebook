@@ -24,7 +24,14 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_select "#test", html: %(<div style="text-align:center;">Hello</div>)
   end
 
-  test "show keeps an approved-provider iframe" do
+  test "show with iframes" do
+    get leafable_path(sample_page_leaf(%(<div id="test"><iframe src="http://example.com"></iframe></div>)))
+
+    assert_select "#test", html: %(<iframe src="http://example.com"></iframe>)
+  end
+
+  test "show keeps an approved-provider iframe under a configured allowlist" do
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] = EmbedProvider::DEFAULTS.to_json
     leaves(:welcome_page).leafable.update!(body: %(<div id="test"><iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe></div>))
 
     get leafable_path(leaves(:welcome_page))
@@ -32,7 +39,8 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_select "#test iframe[src=?]", "https://www.youtube.com/embed/dQw4w9WgXcQ"
   end
 
-  test "show strips an off-allowlist iframe" do
+  test "show strips an off-allowlist iframe under a configured allowlist" do
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] = EmbedProvider::DEFAULTS.to_json
     leaves(:welcome_page).leafable.update!(body: %(<div id="test"><iframe src="http://example.com"></iframe></div>))
 
     get leafable_path(leaves(:welcome_page))

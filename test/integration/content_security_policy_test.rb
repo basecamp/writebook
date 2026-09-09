@@ -1,16 +1,31 @@
 require "test_helper"
 
 class ContentSecurityPolicyTest < ActionDispatch::IntegrationTest
-  test "frame-src carries the approved embed providers" do
+  test "no policy is sent while embeds are permissive" do
+    get new_session_path
+    assert_response :success
+
+    assert_nil response.headers["Content-Security-Policy"]
+  end
+
+  test "frame-src carries the account's configured providers" do
+    accounts(:signal).update!(embed_providers: EmbedProvider::DEFAULTS)
+
     assert_equal EmbedProvider.csp_frame_sources.sort, frame_src_tokens.sort
   end
 
-  test "an operator-configured provider reaches the header without a restart" do
+  test "an environment-configured table reaches the header without a restart, replacing the account's" do
+    accounts(:signal).update!(embed_providers: EmbedProvider::DEFAULTS)
     ENV["WRITEBOOK_EMBED_PROVIDERS"] =
       %([{"name":"Wistia","hosts":["fast.wistia.net"],"path_prefix":"/embed/"}])
 
-    assert_includes frame_src_tokens, "https://fast.wistia.net"
-    assert_includes frame_src_tokens, "https://www.youtube.com"
+    assert_equal %w[https://fast.wistia.net], frame_src_tokens
+  end
+
+  test "a configured table with no valid entry fails closed" do
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"hosts":["*"],"path_prefix":"/e"}])
+
+    assert_equal %w['none'], frame_src_tokens
   end
 
   private

@@ -1,28 +1,36 @@
-# Single source of truth for which third-party <iframe> embeds are permitted in
-# authored book content. Both enforcement points read from here so they can't
-# drift:
+# Which third-party <iframe> embeds are permitted in authored book content.
+#
+# The allowlist is opt-in. With nothing configured, embeds stay permissive:
+# HtmlScrubber keeps an <iframe> from any origin (attributes still scrubbed) and
+# no Content-Security-Policy is sent. Once a provider table is configured, both
+# enforcement points read from it so they can't drift:
 #
 #   * author-time  — HtmlScrubber keeps an <iframe> only when its src matches a
 #                    provider's host *and* path shape, and strips every attribute
 #                    the provider doesn't permit.
-#   * render-time  — the Content-Security-Policy `frame-src` directive is derived
-#                    from the same table (see config/initializers/
-#                    content_security_policy.rb).
+#   * render-time  — a `frame-src` directive derived from the same table (see
+#                    ApplicationController).
 #
-# Writebook is self-hosted, so operators extend the table per install via the
-# WRITEBOOK_EMBED_PROVIDERS environment variable (JSON). Extending it widens the
-# scrubber allowance and the CSP directive together — there is no separate list
-# to keep in sync, and there is no raw-iframe escape hatch: an embed is permitted
-# only if a provider in this table vouches for it.
+# The table comes from, in order of precedence:
+#
+#   1. WRITEBOOK_EMBED_PROVIDERS — a JSON array of entries; the operator's
+#      per-install config, and the way an existing install opts in.
+#   2. Account#embed_providers — the same entries, stored per install. FirstRun
+#      seeds DEFAULTS here, so a new install starts on the curated list while an
+#      install upgraded from before the setting keeps embeds as they were.
+#   3. Neither — permissive.
+#
+# Whichever source applies is the whole table. There is no raw-iframe escape
+# hatch once configured: an embed is permitted only if a provider vouches for it.
 class EmbedProvider
   # The widest set of attributes any provider may carry through the scrubber.
   # Deliberately excludes srcdoc, sandbox, name and any on* handler (script /
   # frame-busting), style (CSS exfil + overlay clickjacking), and allow /
   # referrerpolicy (delegating powerful features or leaking the full URL to the
-  # embed) — so neither a default nor an operator-supplied provider can
-  # reintroduce them. Embeds are sized with width/height and go fullscreen with
-  # allowfullscreen; nothing here carries an author-controlled value that needs
-  # further sanitizing (src is validated by host + path below).
+  # embed) — so no configured provider can reintroduce them. Embeds are sized
+  # with width/height and go fullscreen with allowfullscreen; nothing here
+  # carries an author-controlled value that needs further sanitizing (src is
+  # validated by host + path below).
   PERMITTED_ATTRIBUTES = %w[
     src width height allowfullscreen frameborder title loading
   ].freeze
@@ -36,35 +44,41 @@ class EmbedProvider
   # host can't widen (or, with embedded whitespace, crash) the derived directive.
   HOST_FORMAT = /\A(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z](?:[a-z0-9-]*[a-z0-9])?\z/
 
-  # Shipped defaults — the common authoring cases, each pinned to its approved
-  # path shape. host(s) are matched exactly (case-insensitively); path is matched
-  # on a segment boundary against path_prefix.
+  # The curated table a new install starts with — the common authoring cases,
+  # each pinned to its approved path shape. In config-entry form, so it is also
+  # the value an existing install sets to opt in to the same list.
   DEFAULTS = [
     {
-      name: "YouTube",
-      hosts: %w[youtube.com www.youtube.com youtube-nocookie.com www.youtube-nocookie.com],
-      path_prefix: "/embed"
+      "name" => "YouTube",
+      "hosts" => %w[youtube.com www.youtube.com youtube-nocookie.com www.youtube-nocookie.com],
+      "path_prefix" => "/embed"
     },
     {
-      name: "Vimeo",
-      hosts: %w[player.vimeo.com],
-      path_prefix: "/video"
+      "name" => "Vimeo",
+      "hosts" => %w[player.vimeo.com],
+      "path_prefix" => "/video"
     },
     {
-      name: "Loom",
-      hosts: %w[loom.com www.loom.com],
-      path_prefix: "/embed"
+      "name" => "Loom",
+      "hosts" => %w[loom.com www.loom.com],
+      "path_prefix" => "/embed"
     },
     {
-      name: "Google Maps",
-      hosts: %w[google.com www.google.com],
-      path_prefix: "/maps/embed"
+      "name" => "Google Maps",
+      "hosts" => %w[google.com www.google.com],
+      "path_prefix" => "/maps/embed"
     }
   ].freeze
 
   class << self
+    # True once a provider table is configured — by environment or by the
+    # account — and the allowlist is enforced. False leaves embeds permissive.
+    def configured?
+      !configured_entries.nil?
+    end
+
     def all
-      (DEFAULTS + configured).map { |attributes| new(**attributes) }
+      Array(configured_entries).filter_map { |entry| normalize_config(entry) }.map { |attributes| new(**attributes) }
     end
 
     # The provider vouching for +src+, or nil. Used by the scrubber both to decide
@@ -82,20 +96,28 @@ class EmbedProvider
       !match(src).nil?
     end
 
-    # CSP `frame-src` sources derived from the same table. Host granularity here
-    # (implicit :443, matching the port the scrubber requires); path-shape
-    # enforcement lives in the scrubber. Always https.
+    # CSP `frame-src` sources derived from the same table, or nil when
+    # permissive (no directive is sent). Host granularity here (implicit :443,
+    # matching the port the scrubber requires); path-shape enforcement lives in
+    # the scrubber. Always https. A configured table with no valid entry fails
+    # closed.
     def csp_frame_sources
-      all.flat_map(&:csp_sources).uniq
+      if configured?
+        all.flat_map(&:csp_sources).uniq.presence || [ :none ]
+      end
     end
 
-    # Digest of the effective table, for fragment cache keys wrapping scrubbed
-    # content: a cached fragment skips the scrubber, so it must be invalidated
-    # whenever the policy that produced it changes (a WRITEBOOK_EMBED_PROVIDERS
-    # edit, or a shipped default). Taken in resolution order because match is
-    # first-match-wins: reordering overlapping entries changes the policy.
+    # Fragment cache keys wrapping scrubbed content include this: a cached
+    # fragment skips the scrubber, so it must be invalidated whenever the policy
+    # that produced it changes — permissive to configured, or an edit to the
+    # table. Digested in resolution order because match is first-match-wins:
+    # reordering overlapping entries changes the policy.
     def cache_version
-      ActiveSupport::Digest.hexdigest all.map(&:signature).join("\n")
+      if configured?
+        ActiveSupport::Digest.hexdigest all.map(&:signature).join("\n")
+      else
+        "permissive"
+      end
     end
 
     # Parses +src+ into a URI only when it is a fetchable https URL, on the
@@ -115,16 +137,19 @@ class EmbedProvider
     end
 
     private
-      def configured
+      def configured_entries
+        environment_entries || Account.first&.embed_providers
+      end
+
+      def environment_entries
         raw = ENV["WRITEBOOK_EMBED_PROVIDERS"]
-        return [] if raw.blank?
+        return if raw.blank?
 
         parsed = JSON.parse(raw)
-        entries = parsed.is_a?(Array) ? parsed : [ parsed ]
-        entries.filter_map { |entry| normalize_config(entry) }
+        parsed.is_a?(Array) ? parsed : [ parsed ]
       rescue JSON::ParserError
         Rails.logger.warn("[EmbedProvider] WRITEBOOK_EMBED_PROVIDERS is not valid JSON; ignoring")
-        []
+        nil
       end
 
       def normalize_config(entry)
@@ -148,11 +173,11 @@ class EmbedProvider
         }
       end
 
-      # Canonical form of an operator-supplied prefix: leading slash, duplicate
-      # slashes collapsed, no trailing slash. Nil — the entry is dropped — for a
-      # dot segment or anything that reduces to the root: a browser resolves
-      # "/.", "/./" and "//" to "/", so storing them verbatim would turn the
-      # entry into a whole-host allowance.
+      # Canonical form of a configured prefix: leading slash, duplicate slashes
+      # collapsed, no trailing slash. Nil — the entry is dropped — for a dot
+      # segment or anything that reduces to the root: a browser resolves "/.",
+      # "/./" and "//" to "/", so storing them verbatim would turn the entry
+      # into a whole-host allowance.
       def canonical_path_prefix(prefix)
         prefix = prefix.to_s
         segments = prefix.split("/").reject(&:empty?)
@@ -169,8 +194,8 @@ class EmbedProvider
     @name = name
     @hosts = Array(hosts).map { |host| normalize_host(host) }
     @path_prefix = path_prefix
-    # Intersect with the master list so no provider — default or operator-supplied
-    # — can widen the attribute surface beyond what the scrubber vets.
+    # Intersect with the master list so no configured provider can widen the
+    # attribute surface beyond what the scrubber vets.
     @attributes = (attributes || PERMITTED_ATTRIBUTES) & PERMITTED_ATTRIBUTES
   end
 
