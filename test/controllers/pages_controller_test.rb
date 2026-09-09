@@ -25,13 +25,17 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "show keeps an approved-provider iframe" do
-    get leafable_path(sample_page_leaf(%(<div id="test"><iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe></div>)))
+    leaves(:welcome_page).leafable.update!(body: %(<div id="test"><iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe></div>))
+
+    get leafable_path(leaves(:welcome_page))
 
     assert_select "#test iframe[src=?]", "https://www.youtube.com/embed/dQw4w9WgXcQ"
   end
 
   test "show strips an off-allowlist iframe" do
-    get leafable_path(sample_page_leaf(%(<div id="test"><iframe src="http://example.com"></iframe></div>)))
+    leaves(:welcome_page).leafable.update!(body: %(<div id="test"><iframe src="http://example.com"></iframe></div>))
+
+    get leafable_path(leaves(:welcome_page))
 
     assert_select "#test", html: ""
     assert_select "#test iframe", count: 0

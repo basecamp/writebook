@@ -5,8 +5,6 @@ class BooksControllerTest < ActionDispatch::IntegrationTest
     sign_in :kevin
   end
 
-  teardown { ENV.delete("WRITEBOOK_EMBED_PROVIDERS") }
-
   test "index lists the current user's books" do
     get root_url
 

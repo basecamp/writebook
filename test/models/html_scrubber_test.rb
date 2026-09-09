@@ -15,8 +15,6 @@ class HtmlScrubberTest < ActiveSupport::TestCase
 
     ENV["WRITEBOOK_EMBED_PROVIDERS"] = %([{"hosts":["x.example"],"path_prefix":"/e"}])
     assert_not_equal before, HtmlScrubber.cache_version
-  ensure
-    ENV.delete("WRITEBOOK_EMBED_PROVIDERS")
   end
 
   test "strips inline event handlers on allowed tags" do

@@ -1,8 +1,6 @@
 require "test_helper"
 
 class ContentSecurityPolicyTest < ActionDispatch::IntegrationTest
-  teardown { ENV.delete("WRITEBOOK_EMBED_PROVIDERS") }
-
   test "frame-src carries the approved embed providers" do
     assert_equal EmbedProvider.csp_frame_sources.sort, frame_src_tokens.sort
   end

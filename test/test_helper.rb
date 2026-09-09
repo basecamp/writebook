@@ -11,5 +11,10 @@ module ActiveSupport
     fixtures :all
 
     include SessionTestHelper
+
+    # Tests assert against the shipped provider table, so a per-install
+    # WRITEBOOK_EMBED_PROVIDERS in the shell must not leak in — nor out.
+    setup { @embed_providers_before = ENV.delete("WRITEBOOK_EMBED_PROVIDERS") }
+    teardown { ENV["WRITEBOOK_EMBED_PROVIDERS"] = @embed_providers_before }
   end
 end
