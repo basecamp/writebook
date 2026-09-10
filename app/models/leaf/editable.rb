@@ -4,7 +4,7 @@ module Leaf::Editable
   MINIMUM_TIME_BETWEEN_VERSIONS = 10.minutes
 
   included do
-    has_many :edits, dependent: :delete_all
+    has_many :edits, dependent: :destroy
 
     after_update :record_moved_to_trash, if: :was_trashed?
   end
