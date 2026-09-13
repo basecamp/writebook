@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby
+#
+# Migrate an existing single-tenant Writebook production deployment to multi-tenant.
+#
+# Usage: script/admin/migrate-to-tenant TENANT_NAME
+#
+# This script is designed to be run during a brief maintenance window:
+#   1. Stop the app
+#   2. Run this script
+#   3. Update DNS (add subdomain for this tenant)
+#   4. Start the app
+#
+
+require "fileutils"
+
+STORAGE_DIR = File.expand_path("../../storage", __dir__)
+OLD_DB_PATH = File.join(STORAGE_DIR, "db", "production.sqlite3")
+
+tenant_name = ARGV[0]
+
+if tenant_name.nil? || tenant_name.empty?
+  abort "Usage: script/admin/migrate-to-tenant TENANT_NAME"
+end
+
+unless File.exist?(OLD_DB_PATH)
+  abort "Error: Source database not found at #{OLD_DB_PATH}"
+end
+
+tenant_dir = File.join(STORAGE_DIR, "tenants", tenant_name)
+
+if File.exist?(tenant_dir)
+  abort "Error: Destination tenant directory already exists: #{tenant_dir}"
+end
+
+# Create tenant directory structure
+tenant_db_dir = File.join(tenant_dir, "db")
+tenant_files_dir = File.join(tenant_dir, "files")
+
+FileUtils.mkdir_p(tenant_db_dir)
+FileUtils.mkdir_p(tenant_files_dir)
+
+# Move the database file
+new_db_path = File.join(tenant_db_dir, "production.sqlite3")
+FileUtils.mv(OLD_DB_PATH, new_db_path)
+%w[-wal -shm].each do |suffix|
+  old_file = "#{OLD_DB_PATH}#{suffix}"
+  FileUtils.mv(old_file, "#{new_db_path}#{suffix}") if File.exist?(old_file)
+end
+puts "Moved database to #{new_db_path}"
+
+# Move Active Storage blob files (directories matching ??/??)
+# These are two-character hex directories like ab/cd/<blob_key>
+blob_dirs_moved = 0
+Dir.glob(File.join(STORAGE_DIR, "files", "[0-9a-f][0-9a-f]")).each do |first_level_dir|
+  next unless File.directory?(first_level_dir)
+
+  dir_name = File.basename(first_level_dir)
+  dest_dir = File.join(tenant_files_dir, dir_name)
+  FileUtils.mv(first_level_dir, dest_dir)
+  blob_dirs_moved += 1
+end
+
+if blob_dirs_moved > 0
+  puts "Moved #{blob_dirs_moved} Active Storage blob directories to #{tenant_files_dir}"
+else
+  puts "No Active Storage blob directories found to move"
+end
+
+puts
+puts "Migration complete!"
+puts
+puts "Next steps:"
+puts "  1. Update DNS to add subdomain: #{tenant_name}.yourdomain.com"
+puts "  2. Start the app"
