@@ -4,7 +4,7 @@
       <fieldset class="flex flex-column unpad margin-block-end borderless justify-space-between">
         <legend class="for-screen-reader">Cover color</legend>
 
-        <% Book.themes.keys.each do | theme | %>
+        <% Book.themes.keys.each do |theme| %>
           <label class="btn btn--circle txt-small" style="--btn-background: var(--theme-color--<%= theme -%>)" >
             <%= form.radio_button :theme, theme %>
             <%= image_tag "check.svg", aria: { hidden: "true" }, size: 24, class: "checked" %>
@@ -12,6 +12,7 @@
           </label>
         <% end %>
       </fieldset>
+
       <%= tag.div class: "flex flex-column", data: { controller: "upload-preview", upload_preview_default_image_value: asset_url("empty-cover.png") } do %>
         <label class="align-center center gap position-relative margin-block-end">
           <% unless book.cover.attached? %>
@@ -39,23 +40,23 @@
           <% end %>
         <% end %>
       <% end %>
-    <% end %>
+    </div>
+  <% end %>
 
-    <div class="flex flex-column gap full-width">
-      <div class="flex align-center gap txt-medium">
-        <%= translation_button(:book_title) %>
-        <h1 class="txt-xx-large margin-none full-width">
-          <%= form.text_field :title, required: true, autofocus: true, class: "input", placeholder: "Book title", autocomplete: "off" %>
-        </h1>
-      </div>
-      <div class="flex align-center gap txt-medium">
-        <%= translation_button(:book_subtitle) %>
-        <small class="txt-normal txt-large txt-tight-lines full-width"><%= form.text_area :subtitle, class: "input", placeholder: "Subtitle", autocomplete: "off" %></small>
-      </div>
-      <div class="flex align-center gap txt-medium">
-        <%= translation_button(:book_author) %>
-        <small class="txt-normal txt-large txt-tight-lines full-width"><%= form.text_field :author, class: "input", placeholder: "Author", autocomplete: "off" %></small>
-      </div>
+  <div class="flex flex-column gap full-width">
+    <div class="flex align-center gap txt-medium">
+      <%= translation_button(:book_title) %>
+      <h1 class="txt-xx-large margin-none full-width">
+        <%= form.text_field :title, required: true, autofocus: true, class: "input", placeholder: "Book title", autocomplete: "off" %>
+      </h1>
+    </div>
+    <div class="flex align-center gap txt-medium">
+      <%= translation_button(:book_subtitle) %>
+      <small class="txt-normal txt-large txt-tight-lines full-width"><%= form.text_area :subtitle, class: "input", placeholder: "Subtitle", autocomplete: "off" %></small>
+    </div>
+    <div class="flex align-center gap txt-medium">
+      <%= translation_button(:book_author) %>
+      <small class="txt-normal txt-large txt-tight-lines full-width"><%= form.text_field :author, class: "input", placeholder: "Author", autocomplete: "off" %></small>
     </div>
   </div>
 
