@@ -1,0 +1,48 @@
+<% content_for(:title) { "Nothing to export" } %>
+
+<% content_for :header do %>
+  <nav>
+    <%= link_to root_path, class: "btn" do %>
+      <%= image_tag "arrow-left.svg", aria: { hidden: true }, size: 24 %>
+      <span class="for-screen-reader">Go back</span>
+    <% end %>
+
+    <div class="breadcrumbs">
+      <%= render "books/index_link" %>
+      <span class="flex-item-no-shrink">▸</span>
+      <%= link_to "Export to static site", static_export_path %>
+      <span class="flex-item-no-shrink">▸</span>
+      <strong>Result</strong>
+    </div>
+  </nav>
+<% end %>
+
+<div class="panel borderless center pad fill-shade flex flex-column margin-block gap">
+  <h1 class="txt-large--responsive">Nothing to export yet</h1>
+
+  <p class="txt-medium--responsive">
+    You don't have any published books, so there's nothing to render. Publish a
+    book from its settings, then generate the static site again.
+  </p>
+
+  <%= button_to static_export_path, method: :post, class: "btn btn--reversed center txt-medium" do %>
+    <%= image_tag "refresh.svg", aria: { hidden: true }, size: 24 %>
+    <span>Generate again</span>
+  <% end %>
+</div>
+
+<div class="panel borderless center pad fill-none flex flex-column gap txt-subtle txt-medium--responsive">
+  <p class="margin-block-none">
+    Or go back and check <strong>“Include unpublished drafts”</strong> to export your
+    drafts too — your live database is left untouched.
+  </p>
+</div>
+
+<% content_for :footer do %>
+  <nav class="flex align-center justify-center gap">
+    <%= link_to root_path, class: "btn" do %>
+      <%= image_tag "arrow-left.svg", aria: { hidden: true }, size: 24 %>
+      <span>Back to library</span>
+    <% end %>
+  </nav>
+<% end %>
