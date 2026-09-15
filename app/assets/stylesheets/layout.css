@@ -93,15 +93,19 @@ body {
   }
 }
 
+/* The sidebar spans all four grid rows, so sizing it against its grid area makes
+   it as tall as the whole document and its overflow never kicks in. Stick it to
+   the viewport instead, so the table of contents scrolls its own content. */
 :where(#sidebar) {
   background-color: var(--color-subtle-light);
-  block-size: 100%;
+  block-size: 100dvh;
   font-size: var(--font-medium-responsive);
   grid-area: sidebar;
   inline-size: 25vw;
-  max-block-size: 100%;
+  inset-block-start: 0;
+  max-block-size: 100dvh;
   overflow: auto;
-  position: relative;
+  position: sticky;
   transition: margin-inline-start 0.2s ease-out;
 
   :has(#sidebar-toggle:checked) & {
