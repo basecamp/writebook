@@ -92,6 +92,23 @@ class ActionText::Markdown::UploadsControllerTest < ActionDispatch::IntegrationT
     assert_response :forbidden
   end
 
+  test "an upload must be a file, not the signed id of another book's file" do
+    books(:manual).cover.attach \
+      io: file_fixture("reading.webp").open, filename: "reading.webp", content_type: "image/webp"
+    cover = books(:manual).cover.blob
+
+    assert_no_changes -> { ActiveStorage::Attachment.count } do
+      post action_text_markdown_uploads_url, params: {
+        record_gid: uploads_signed_id_for(pages(:welcome)),
+        attribute_name: "body",
+        file: cover.signed_id
+      }, as: :xhr
+    end
+
+    assert_response :unprocessable_entity
+    assert_equal [ books(:manual) ], ActiveStorage::Attachment.where(blob: cover).map(&:record)
+  end
+
   test "view attached file" do
     books(:handbook).update! published: true
     attachment = attach_upload_to_welcome_page

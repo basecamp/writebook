@@ -5,7 +5,7 @@ class ActionText::Markdown::UploadsController < ApplicationController
     ActiveStorage::Current.url_options = { protocol: request.protocol, host: request.host, port: request.port }
   end
 
-  before_action :set_record, :ensure_editable, only: :create
+  before_action :set_record, :ensure_editable, :ensure_file_uploaded, only: :create
   before_action :set_attachment, :ensure_attachment_readable, only: :show
 
   def create
@@ -42,6 +42,10 @@ class ActionText::Markdown::UploadsController < ApplicationController
 
     def ensure_editable
       head :forbidden unless @book.editable?
+    end
+
+    def ensure_file_uploaded
+      head :unprocessable_entity unless uploaded_file?(params[:file])
     end
 
     def set_attachment

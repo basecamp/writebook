@@ -49,19 +49,18 @@ class ActiveStorageAuthenticationTest < ActionDispatch::IntegrationTest
     assert_response :no_content
   end
 
-  test "disk service download endpoint stays public" do
+  test "disk service download endpoint doesn't require authentication" do
     ActiveStorage::Current.url_options = { host: "www.example.com", protocol: "https" }
-    blob = ActiveStorage::Blob.create_and_upload! \
+    books(:handbook).update! published: true
+    books(:handbook).cover.attach \
       io: StringIO.new(attachment_bytes), filename: "hi.txt", content_type: "text/plain"
-    download_path = URI.parse(blob.url).request_uri
+    download_path = URI.parse(books(:handbook).cover.url).request_uri
 
     anonymous = open_session
     anonymous.get download_path
 
     assert_equal 200, anonymous.status
     assert_equal attachment_bytes, anonymous.response.body
-  ensure
-    blob&.purge
   end
 
   private
