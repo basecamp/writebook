@@ -1,10 +1,6 @@
 class ActionText::Markdown::UploadsController < ApplicationController
   allow_unauthenticated_access only: :show
 
-  before_action do
-    ActiveStorage::Current.url_options = { protocol: request.protocol, host: request.host, port: request.port }
-  end
-
   before_action :set_record, :ensure_editable, :ensure_file_uploaded, only: :create
   before_action :set_attachment, :ensure_attachment_readable, only: :show
 
@@ -25,7 +21,7 @@ class ActionText::Markdown::UploadsController < ApplicationController
       expires_in 5.minutes, public: false
     end
 
-    redirect_to @attachment.url
+    redirect_to_attachment_path
   end
 
   private
@@ -60,5 +56,15 @@ class ActionText::Markdown::UploadsController < ApplicationController
     # closed rather than letting the nil short-circuit the check.
     def ensure_attachment_readable
       head :not_found unless @book&.published? || @book&.accessable?
+    end
+
+    # A published book's redirect sits in shared caches for a year, so it can't name a
+    # host taken from the request: a forged Host or X-Forwarded-Host would be cached
+    # and served to every later reader. A path-only Location resolves against whatever
+    # host the reader asked. redirect_to would prefix the request host, so set it directly.
+    def redirect_to_attachment_path
+      ActiveStorage::Current.set(url_options: { only_path: true }) do
+        head :found, location: @attachment.url
+      end
     end
 end

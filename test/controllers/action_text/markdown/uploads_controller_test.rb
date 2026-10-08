@@ -128,6 +128,56 @@ class ActionText::Markdown::UploadsControllerTest < ActionDispatch::IntegrationT
     assert_match "public", @response.headers["Cache-Control"]
   end
 
+  test "a publicly cached redirect doesn't take its host from X-Forwarded-Host" do
+    books(:handbook).update! published: true
+    attachment = attach_upload_to_welcome_page
+
+    reset!
+    get action_text_markdown_upload_path(slug: attachment.slug), headers: { "X-Forwarded-Host" => "attacker.example" }
+
+    assert_response :found
+    assert_match "public", response.headers["Cache-Control"]
+    assert_match %r{\A/rails/active_storage/disk/.*/reading\.webp\z}, response.headers["Location"]
+    assert_not_includes response.headers["Location"], "attacker.example"
+  end
+
+  test "a publicly cached redirect doesn't take its host from the Host header" do
+    books(:handbook).update! published: true
+    attachment = attach_upload_to_welcome_page
+
+    reset!
+    host! "attacker.example"
+    get action_text_markdown_upload_path(slug: attachment.slug)
+
+    assert_response :found
+    assert_match "public", response.headers["Cache-Control"]
+    assert response.headers["Location"].start_with?("/rails/active_storage/disk/")
+  end
+
+  test "a privately cached redirect is path-only too" do
+    books(:handbook).update! published: false
+    attachment = attach_upload_to_welcome_page
+
+    sign_in :jz
+    get action_text_markdown_upload_path(slug: attachment.slug), headers: { "X-Forwarded-Host" => "attacker.example" }
+
+    assert_response :found
+    assert_match "private", response.headers["Cache-Control"]
+    assert response.headers["Location"].start_with?("/rails/active_storage/disk/")
+  end
+
+  test "the path-only redirect serves the attached file" do
+    books(:handbook).update! published: true
+    attachment = attach_upload_to_welcome_page
+
+    reset!
+    get action_text_markdown_upload_path(slug: attachment.slug)
+    get response.headers["Location"]
+
+    assert_response :success
+    assert_equal file_fixture("reading.webp").binread, response.body
+  end
+
   test "an attachment of an unpublished book is not served to anonymous clients" do
     books(:handbook).update! published: false
     attachment = attach_upload_to_welcome_page
