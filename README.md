@@ -6,6 +6,12 @@ Writebook is an easy-to-use application for publishing content on the web.
 Content is authored in Markdown, and books can contain picture pages, chapters, and title pages.
 Books can be published privately or publicly, and are searchable.
 
+## Creating book pages
+
+Editors create pages, picture pages, and sections from the controls in the book.
+The controls create a page and show an inline editor. Existing pages retain autosave and Markdown image uploads.
+Separate creation forms are not supported. The `/books/:book_id/pages/new`, `/books/:book_id/pictures/new`, and `/books/:book_id/sections/new` URLs return HTTP 404.
+
 ## How to get Writebook
 
 Writebook is distributed as a Docker image.

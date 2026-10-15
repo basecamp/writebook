@@ -5,6 +5,12 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     sign_in :kevin
   end
 
+  test "new is not available" do
+    get "#{book_pages_path(books(:handbook))}/new"
+
+    assert_response :not_found
+  end
+
   test "show" do
     get leafable_path(sample_page_leaf("## Hello"))
 
