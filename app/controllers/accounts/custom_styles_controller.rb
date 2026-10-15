@@ -1,5 +1,13 @@
 class Accounts::CustomStylesController < ApplicationController
-  before_action :ensure_can_administer, :set_account
+  allow_unauthenticated_access only: :show
+  before_action :ensure_can_administer, :set_account, except: :show
+
+  def show
+    if stale? Current.account
+      expires_in 1.hour, public: true
+      render plain: Current.account&.custom_styles.to_s, content_type: "text/css"
+    end
+  end
 
   def edit
   end
