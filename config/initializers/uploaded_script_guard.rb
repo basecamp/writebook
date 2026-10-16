@@ -3,7 +3,9 @@
 # Browsers accept sixteen spellings of that type, and Disk URLs sign the type
 # they were minted with, so a list of types to refuse can't cover old links.
 # Instead, anything Active Storage serves that isn't plainly media goes out as
-# a download, whatever its URL says. Only reads are touched: uploading
+# a download, whatever its URL says. A multi-range response keeps its
+# multipart/byteranges type and boundary, which no browser runs as a script.
+# Only reads are touched: uploading
 # (direct upload JSON, Disk PUT) answers in its own types.
 #
 # Accepted on upgrade: a browser that cached an upload under a script type
@@ -11,7 +13,7 @@
 # expires, up to a year after it was fetched (config/initializers/active_storage.rb).
 # Revalidation doesn't help, since a 304 carries no content type.
 class UploadedScriptGuard
-  SERVABLE = %r{\A(image|video|audio)/|\A(application/pdf|application/octet-stream|text/plain)\z}
+  SERVABLE = %r{\A(image|video|audio)/|\A(application/pdf|application/octet-stream|text/plain|multipart/byteranges)\z}
 
   def initialize(app)
     @app = app
