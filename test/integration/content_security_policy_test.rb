@@ -61,6 +61,23 @@ class ContentSecurityPolicyTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "with the policy turned off, pages send only frame-src" do
+    accounts(:signal).update!(embed_providers: EmbedProvider::DEFAULTS)
+
+    without_policy do
+      assert_equal EmbedProvider.csp_frame_sources.sort, frame_src_tokens.sort
+      assert_no_match "script-src", response.headers["Content-Security-Policy"]
+    end
+  end
+
+  test "with the policy turned off and no embeds, pages send none" do
+    without_policy do
+      get PAGE_PATH
+      assert_response :success
+      assert_nil response.headers["Content-Security-Policy"]
+    end
+  end
+
   test "the escape hatch boots without a policy" do
     output = IO.popen({ "DISABLE_CONTENT_SECURITY_POLICY" => "true" },
       [ "bin/rails", "runner", "print Rails.application.config.content_security_policy.inspect" ], chdir: Rails.root, err: File::NULL, &:read)
@@ -93,6 +110,14 @@ class ContentSecurityPolicyTest < ActionDispatch::IntegrationTest
   end
 
   private
+    # What DISABLE_CONTENT_SECURITY_POLICY=true leaves at boot: no application policy
+    def without_policy
+      previous = Rails.application.env_config.delete("action_dispatch.content_security_policy")
+      yield
+    ensure
+      Rails.application.env_config["action_dispatch.content_security_policy"] = previous
+    end
+
     def with_asset_host(asset_host)
       previous, ApplicationController.asset_host = ApplicationController.asset_host, asset_host
       Rails.application.importmap.send(:clear_cache)
