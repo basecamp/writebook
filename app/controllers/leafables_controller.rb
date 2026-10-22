@@ -6,10 +6,6 @@ class LeafablesController < ApplicationController
   before_action :ensure_editable, except: :show
   before_action :broadcast_being_edited_indicator, only: :update
 
-  def new
-    @leafable = new_leafable
-  end
-
   def create
     @leaf = @book.press new_leafable, leaf_params
     position_new_leaf @leaf
