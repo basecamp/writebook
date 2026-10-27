@@ -7,14 +7,17 @@ default: &default
 development:
   primary:
     <<: *default
-    database: storage/db/development.sqlite3
+    database: storage/tenants/%{tenant}/db/development.sqlite3
+    tenanted: true
 
 test:
   primary:
     <<: *default
-    database: storage/db/test.sqlite3
+    database: storage/tenants/%{tenant}/db/test.sqlite3
+    tenanted: true
 
 production:
   primary:
     <<: *default
-    database: storage/db/production.sqlite3
+    database: storage/tenants/%{tenant}/db/production.sqlite3
+    tenanted: true
