@@ -46,7 +46,7 @@ class FirstRunsControllerTest < ActionDispatch::IntegrationTest
       post first_run_path, params: { user: { name: "New Person", email_address: "new@example.com", password: "secret123456" } }
     end
 
-    assert_redirected_to root_url
+    assert_redirected_to root_path
     assert_nil parsed_cookies.signed[:session_token]
   end
 
