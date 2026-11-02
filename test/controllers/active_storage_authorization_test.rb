@@ -46,7 +46,11 @@ class ActiveStorageAuthorizationTest < ActionDispatch::IntegrationTest
   test "unpublishing a book revokes the disk URL behind a page upload" do
     upload = attach_upload_to_welcome_page
     get action_text_markdown_upload_path(slug: upload.slug)
-    disk_path = URI.parse(response.location).request_uri
+    assert_response :redirect
+    disk_path = response.location
+
+    get disk_path
+    assert_response :success
 
     books(:handbook).update! published: false
 
