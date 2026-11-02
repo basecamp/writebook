@@ -16,7 +16,7 @@ class HtmlScrubber < Rails::Html::PermitScrubber
   # Bump whenever the scrubbing rules tighten. Fragment caches wrapping scrubbed
   # content key on cache_version, so a fragment rendered under the old rules —
   # or under a previous embed policy — is re-scrubbed rather than served verbatim.
-  POLICY_VERSION = 1
+  POLICY_VERSION = 2
 
   def self.cache_version
     "#{POLICY_VERSION}-#{EmbedProvider.cache_version}"
