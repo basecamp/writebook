@@ -46,6 +46,14 @@ class FirstRunTest < ActiveSupport::TestCase
     assert book.leaves.any?
   end
 
+  test "a first run that can't create its administrator leaves no account behind" do
+    assert_raises ActiveRecord::NotNullViolation do
+      FirstRun.create!({ name: "User", email_address: "user@example.com", password: "" })
+    end
+
+    assert Account.none?
+  end
+
   private
     def create_first_run_user
       FirstRun.create!({ name: "User", email_address: "user@example.com", password: "secret123456" })

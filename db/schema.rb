@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_09_09_222120) do
+ActiveRecord::Schema[8.0].define(version: 2026_10_31_120000) do
   create_table "accesses", force: :cascade do |t|
     t.integer "user_id", null: false
     t.integer "book_id", null: false
@@ -29,6 +29,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_09_09_222120) do
     t.datetime "updated_at", null: false
     t.text "custom_styles"
     t.text "embed_providers"
+    t.integer "singleton_guard", default: 0, null: false
+    t.index ["singleton_guard"], name: "index_accounts_on_singleton_guard", unique: true
   end
 
   create_table "action_text_markdowns", force: :cascade do |t|
