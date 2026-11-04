@@ -7,6 +7,7 @@ gem "rails", github: "rails/rails"
 # Drivers
 gem "sqlite3", "~> 2.9"
 gem "redis", ">= 4.0.1"
+gem "redis-client", ">= 0.28.0"
 
 # Deployment
 gem "puma", "~> 7.2", ">= 7.2.1"
