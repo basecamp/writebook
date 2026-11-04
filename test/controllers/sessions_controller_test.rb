@@ -37,10 +37,10 @@ class SessionsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "create records the proxy's client IP over a client-sent Forwarded header" do
-    post session_url, params: { email_address: "david@example.com", password: "secret123456" },
+    post session_path, params: { email_address: "david@example.com", password: "secret123456" },
       env: { "HTTP_X_FORWARDED_FOR" => "1.2.3.4", "HTTP_FORWARDED" => "for=9.9.9.9" }
 
-    assert_redirected_to root_url
+    assert_redirected_to root_path
     assert_equal "1.2.3.4", Session.last.ip_address
   end
 
