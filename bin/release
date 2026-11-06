@@ -59,7 +59,11 @@ end
 
 announcing "Creating GitHub release v#{VERSION}..." do
   on(:local) do
-    if MANUAL_NOTES
+    if system "gh", "release", "view", "v#{VERSION}", out: File::NULL, err: File::NULL
+      released_sha = `gh api "repos/{owner}/{repo}/commits/v#{VERSION}" --jq .sha`.strip
+      abort "Release v#{VERSION} already exists at #{released_sha}, not #{GIT_SHA}" unless released_sha == GIT_SHA
+      puts "Release v#{VERSION} already exists at #{GIT_SHA}; skipping"
+    elsif MANUAL_NOTES
       notes_file = "tmp/release_notes.md"
 
       execute :mkdir, "-p", "tmp"
@@ -101,6 +105,7 @@ end
 
 announcing "Exporting source code to ZIP..." do
   on(:local) do
+    execute :docker, :rm, "-f", EXPORT_IMAGE_NAME
     execute :docker, :run, "--name", EXPORT_IMAGE_NAME, EXPORT_IMAGE_NAME
     execute :docker, :cp, "#{EXPORT_IMAGE_NAME}:/#{EXPORT_TARGET_NAME}", "tmp/#{EXPORT_TARGET_NAME}"
     execute :docker, :rm, EXPORT_IMAGE_NAME
