@@ -41,7 +41,7 @@ Rails.application.configure do
   config.log_level = ENV.fetch("RAILS_LOG_LEVEL", "info")
 
   # Cache in memory for now
-  config.cache_store = :redis_cache_store
+  config.cache_store = :redis_cache_store, { url: ENV["REDIS_URL"] }
 
   # Assets are cacheable
   config.public_file_server.headers = {
