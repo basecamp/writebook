@@ -1,0 +1,60 @@
+<% content_for(:title) { "Export to static site" } %>
+
+<% content_for :header do %>
+  <nav>
+    <%= link_to root_path, class: "btn" do %>
+      <%= image_tag "arrow-left.svg", aria: { hidden: true }, size: 24 %>
+      <span class="for-screen-reader">Go back</span>
+    <% end %>
+
+    <div class="breadcrumbs">
+      <%= render "books/index_link" %>
+      <span class="flex-item-no-shrink">▸</span>
+      <strong>Export to static site</strong>
+    </div>
+  </nav>
+<% end %>
+
+<div class="panel borderless center pad fill-shade flex flex-column margin-block gap">
+  <h1 class="txt-large--responsive">Export to a static site</h1>
+
+  <p class="txt-medium--responsive">
+    Generate a self-contained HTML version of your library — the menu of books,
+    every book's table of contents, and every page — with all CSS, JavaScript, and
+    image files copied in. No Rails process, login, or editing machinery: the result
+    can be hosted anywhere.
+  </p>
+
+  <%= form_with url: static_export_path, method: :post, class: "flex flex-column align-center gap" do %>
+    <label class="flex flex-column align-center gap txt-medium--responsive">
+      <span>Which book to export</span>
+      <%= select_tag :book_id,
+            options_for_select([["All published books", ""]] + @books.map { |book| [book.title, book.id] }) %>
+    </label>
+
+    <label class="flex align-center gap txt-medium--responsive">
+      <%= check_box_tag :include_drafts, "1", false %>
+      Include unpublished drafts
+    </label>
+    <%= button_tag type: :submit, class: "btn btn--reversed center txt-medium", data: { turbo_submits_with: "Generating…" } do %>
+      <%= image_tag "download.svg", aria: { hidden: true }, size: 24 %>
+      <span>Generate static site</span>
+    <% end %>
+  <% end %>
+</div>
+
+<div class="panel borderless center pad fill-none flex flex-column gap txt-subtle txt-medium--responsive">
+  <p class="margin-block-none">
+    Pick <strong>All published books</strong> to export the whole library, or pick a
+    single book to export just that one — handy for sharing or hosting one title at a
+    time. A single book is exported whether or not it's published; the
+    <strong>Include unpublished drafts</strong> box only applies when exporting all
+    books. Your live database is left untouched either way (the change is rolled back
+    the moment the export finishes).
+  </p>
+  <p class="margin-block-none">
+    For a very large library, generating from the browser may time out; in that case
+    run <code>bin/rails static:generate</code> (or <code>STATIC_ALL=1</code>) from the
+    server shell.
+  </p>
+</div>

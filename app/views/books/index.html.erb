@@ -11,6 +11,13 @@
     </a>
 
     <% if Current.user %>
+      <% if Current.user.can_administer? %>
+        <%= link_to static_export_path, class: "btn" do %>
+          <%= image_tag "download.svg", aria: { hidden: true }, size: 24 %>
+          <span class="for-screen-reader">Export to static site</span>
+        <% end %>
+      <% end %>
+
       <%= link_to users_path, class: "btn" do %>
         <%= image_tag "settings.svg", aria: { hidden: true }, size: 24 %>
         <span class="for-screen-reader">Manage people and settings</span>
