@@ -5,6 +5,46 @@ class Accounts::CustomStylesControllerTest < ActionDispatch::IntegrationTest
     sign_in :david
   end
 
+  test "show serves custom styles as plain CSS" do
+    accounts(:signal).update! custom_styles: ":root { --color-text: red; }"
+
+    get account_custom_styles_path
+    assert_response :ok
+    assert_equal "text/css", @response.media_type
+    assert_equal ":root { --color-text: red; }", @response.body
+  end
+
+  test "show is accessible without authentication" do
+    sign_out
+
+    get account_custom_styles_path
+    assert_response :ok
+    assert_equal "text/css", @response.media_type
+  end
+
+  test "show serves markup verbatim as inert CSS text, never HTML" do
+    payload = "</style><script>alert(1)</script>"
+    accounts(:signal).update! custom_styles: payload
+
+    get account_custom_styles_path
+    assert_response :ok
+    assert_equal "text/css", @response.media_type
+    assert_equal payload, @response.body
+  end
+
+  test "show is publicly cacheable and honors conditional requests" do
+    accounts(:signal).update! custom_styles: ":root { --color-text: red; }"
+
+    get account_custom_styles_path
+    assert_response :ok
+    assert_includes @response.headers["Cache-Control"], "public"
+    assert_includes @response.headers["Cache-Control"], "max-age=3600"
+    assert_not_nil @response.headers["ETag"]
+
+    get account_custom_styles_path, headers: { "If-None-Match" => @response.headers["ETag"] }
+    assert_response :not_modified
+  end
+
   test "edit" do
     get edit_account_custom_styles_url
     assert_response :ok
