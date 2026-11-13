@@ -10,7 +10,7 @@ gem "redis", ">= 4.0.1"
 gem "redis-client", ">= 0.28.0"
 
 # Deployment
-gem "puma", "~> 7.2", ">= 7.2.1"
+gem "puma", "~> 7.2", ">= 7.2.2"
 
 # Jobs
 gem "resque", "~> 2.6.0"
