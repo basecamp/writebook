@@ -46,5 +46,6 @@ end
 
 group :test do
   gem "capybara"
+  gem "rails-jsdom", github: "jakehow/rails-jsdom", branch: "load-app-entry"
   gem "selenium-webdriver"
 end
