@@ -15,6 +15,7 @@ module SystemTestHelper
     execute_script <<~JS
       const editor = document.querySelector("[name='#{name}']")
       editor.value = "#{escape_javascript(content)}"
+      editor.dispatchEvent(new Event("input", { bubbles: true }))
     JS
   end
 end
