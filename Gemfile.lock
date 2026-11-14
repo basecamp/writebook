@@ -5,19 +5,6 @@ GIT
     useragent (0.16.11)
 
 GIT
-  remote: https://github.com/jakehow/rails-jsdom.git
-  revision: fea9cb9572e4dfe8e82be6b84d468f521e1bbb83
-  branch: main
-  specs:
-    rails-jsdom (0.2.0)
-      actioncable (>= 8.1)
-      actionpack (>= 8.1)
-      importmap-rails (>= 2.0)
-      nokogiri (>= 1.15)
-      propshaft (>= 1.0)
-      turbo-rails (>= 2.0)
-
-GIT
   remote: https://github.com/rails/rails.git
   revision: 8b06b0eb98315cbbd6d7f526112cd8d909ff787c
   specs:
@@ -273,6 +260,13 @@ GEM
     rails-html-sanitizer (1.7.2)
       loofah (~> 2.25, >= 2.25.3)
       nokogiri (>= 1.15.7, != 1.16.7, != 1.16.6, != 1.16.5, != 1.16.4, != 1.16.3, != 1.16.2, != 1.16.1, != 1.16.0.rc1, != 1.16.0)
+    rails-jsdom (0.2.0)
+      actioncable (>= 8.1)
+      actionpack (>= 8.1)
+      importmap-rails (>= 2.0)
+      nokogiri (>= 1.15)
+      propshaft (>= 1.0)
+      turbo-rails (>= 2.0)
     rainbow (3.1.1)
     rake (13.4.2)
     rbs (4.0.3)
@@ -415,7 +409,7 @@ DEPENDENCIES
   propshaft
   puma (~> 7.2, >= 7.2.2)
   rails!
-  rails-jsdom!
+  rails-jsdom (~> 0.2)
   redcarpet (~> 3.6)
   redis (>= 4.0.1)
   redis-client (>= 0.28.0)
