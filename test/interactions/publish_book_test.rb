@@ -1,6 +1,6 @@
-require "application_system_test_case"
+require "application_interaction_test_case"
 
-class PublishTest < ApplicationSystemTestCase
+class PublishTest < ApplicationInteractionTestCase
   setup do
     sign_in "kevin@example.com"
   end

@@ -1,6 +1,6 @@
-require "application_system_test_case"
+require "application_interaction_test_case"
 
-class BookCoverTest < ApplicationSystemTestCase
+class BookCoverTest < ApplicationInteractionTestCase
   setup do
     sign_in "kevin@example.com"
   end
@@ -9,7 +9,7 @@ class BookCoverTest < ApplicationSystemTestCase
     visit new_book_url
 
     fill_in "Book title", with: "Covered"
-    attach_file "book[cover]", file_fixture("reading.webp"), make_visible: true
+    attach_file "book[cover]", file_fixture("reading.webp")
     within "footer" do
       click_button
     end

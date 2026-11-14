@@ -36,3 +36,5 @@
 
 # Ignore exported zipfiles
 /*.zip
+
+/node_modules
