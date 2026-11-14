@@ -12,6 +12,9 @@ announce "Installing dependencies"
 gem install bundler --conservative
 bundle check || bundle install
 
+announce "Installing npm packages"
+npm ci
+
 announce "Preparing database"
 if [[ $* == *--reset* ]]; then
   rails db:reset
