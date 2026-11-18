@@ -5,6 +5,12 @@ class SectionsControllerTest < ActionDispatch::IntegrationTest
     sign_in :kevin
   end
 
+  test "new is not available" do
+    get "#{book_sections_path(books(:handbook))}/new"
+
+    assert_response :not_found
+  end
+
   test "create" do
     post book_sections_path(books(:handbook), format: :turbo_stream)
     assert_response :success

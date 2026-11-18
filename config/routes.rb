@@ -31,9 +31,9 @@ Rails.application.routes.draw do
       resource :search
     end
 
-    resources :sections
-    resources :pictures
-    resources :pages
+    resources :sections, except: :new
+    resources :pictures, except: :new
+    resources :pages, except: :new
   end
 
   get "/:id/:slug", to: "books#show", constraints: { id: /\d+/ }, as: :slugged_book
