@@ -14,13 +14,13 @@ bundle check || bundle install
 
 announce "Preparing database"
 if [[ $* == *--reset* ]]; then
-  rails db:reset
+  bin/rails db:reset
 else
-  rails db:prepare
+  bin/rails db:prepare
 fi
 
 announce "Removing old logs and tempfiles"
-rails log:clear tmp:clear
+bin/rails log:clear tmp:clear
 
 echo
 echo "Start developing with bin/dev"
