@@ -1,0 +1,20 @@
+<% content_for(:title) { "Connect a device" } %>
+
+<div class="panel shadow center margin-block-double <%= "shake" if @error %>">
+  <h1 class="margin-block-end">Connect a device</h1>
+
+  <p>Enter the code shown in your terminal to connect it to Writebook.</p>
+
+  <% if @error %>
+    <p class="txt-negative"><%= @error %></p>
+  <% end %>
+
+  <%= form_with url: oauth_device_verification_url, class: "flex flex-column gap" do |form| %>
+    <label class="flex align-center gap input input--actor txt-large">
+      <%= form.text_field :user_code, required: true, class: "input full-width txt-align-center", autofocus: true,
+            autocomplete: "off", autocapitalize: "characters", spellcheck: false, placeholder: "XXXX-XXXX", maxlength: 9 %>
+    </label>
+
+    <button type="submit" class="btn btn--reversed center">Continue</button>
+  <% end %>
+</div>

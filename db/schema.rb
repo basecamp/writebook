@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_10_31_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_11_21_000000) do
   create_table "accesses", force: :cascade do |t|
     t.integer "user_id", null: false
     t.integer "book_id", null: false
@@ -108,6 +108,50 @@ ActiveRecord::Schema[8.0].define(version: 2026_10_31_120000) do
     t.string "title", null: false
     t.index ["book_id"], name: "index_leaves_on_book_id"
     t.index ["leafable_type", "leafable_id"], name: "index_leafs_on_leafable"
+  end
+
+  create_table "oauth_access_tokens", force: :cascade do |t|
+    t.string "token_digest", null: false
+    t.integer "user_id", null: false
+    t.integer "refresh_token_id"
+    t.datetime "last_used_at"
+    t.datetime "revoked_at"
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["refresh_token_id"], name: "index_oauth_access_tokens_on_refresh_token_id"
+    t.index ["token_digest"], name: "index_oauth_access_tokens_on_token_digest", unique: true
+    t.index ["user_id"], name: "index_oauth_access_tokens_on_user_id"
+  end
+
+  create_table "oauth_device_grants", force: :cascade do |t|
+    t.string "device_code_digest", null: false
+    t.string "user_code", null: false
+    t.string "status", default: "pending", null: false
+    t.integer "user_id"
+    t.datetime "consumed_at"
+    t.datetime "last_polled_at"
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["device_code_digest"], name: "index_oauth_device_grants_on_device_code_digest", unique: true
+    t.index ["user_code"], name: "index_oauth_device_grants_on_user_code", unique: true
+  end
+
+  create_table "oauth_refresh_tokens", force: :cascade do |t|
+    t.string "token_digest", null: false
+    t.integer "user_id", null: false
+    t.string "family_id", null: false
+    t.integer "replaced_by_id"
+    t.datetime "rotated_at"
+    t.text "successor_raw_token"
+    t.datetime "revoked_at"
+    t.datetime "expires_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["family_id"], name: "index_oauth_refresh_tokens_on_family_id"
+    t.index ["token_digest"], name: "index_oauth_refresh_tokens_on_token_digest", unique: true
+    t.index ["user_id"], name: "index_oauth_refresh_tokens_on_user_id"
   end
 
   create_table "pages", force: :cascade do |t|

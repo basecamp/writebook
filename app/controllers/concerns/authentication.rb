@@ -1,12 +1,12 @@
 module Authentication
   extend ActiveSupport::Concern
-  include SessionLookup
+  include SessionLookup, TokenLookup
 
   included do
     before_action :require_authentication
     helper_method :signed_in?
 
-    protect_from_forgery with: :exception, unless: -> { authenticated_by.bot_key? }
+    protect_from_forgery with: :exception, unless: -> { authenticated_by.oauth_token? }
   end
 
   class_methods do
@@ -31,14 +31,35 @@ module Authentication
     end
 
     def restore_authentication
-      if session = find_session_by_cookie
+      if bearer_token.present?
+        resume_token_access
+      elsif session = find_session_by_cookie
         resume_session session
       end
     end
 
+    # A presented-but-invalid bearer token must answer 401 rather than fall
+    # through to cookie authentication or the sign-in page.
     def request_authentication
-      session[:return_to_after_authenticating] = request.url
-      redirect_to new_session_url
+      if bearer_token.present?
+        request_token_authentication
+      else
+        session[:return_to_after_authenticating] = request.url
+        redirect_to new_session_url
+      end
+    end
+
+    def resume_token_access
+      if access_token = find_access_token_by_header
+        access_token.record_use
+        Current.user = access_token.user
+        set_authenticated_by(:oauth_token)
+      end
+    end
+
+    def request_token_authentication
+      response.headers["WWW-Authenticate"] = 'Bearer error="invalid_token"'
+      head :unauthorized
     end
 
     def redirect_signed_in_user_to_root

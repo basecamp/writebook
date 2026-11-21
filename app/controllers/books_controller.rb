@@ -34,11 +34,16 @@ class BooksController < ApplicationController
   end
 
   def update
-    @book.update(book_params)
-    update_accesses(@book)
+    @book.update(book_params) if params[:book].present?
     remove_cover if params[:remove_cover] == "true"
 
-    redirect_to book_slug_url(@book)
+    respond_to do |format|
+      format.html do
+        update_accesses(@book)
+        redirect_to book_slug_url(@book)
+      end
+      format.json { render json: { id: @book.id, fingerprint: @book.fingerprint } }
+    end
   end
 
   def destroy

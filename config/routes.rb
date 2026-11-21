@@ -9,6 +9,13 @@ Rails.application.routes.draw do
     end
   end
 
+  scope :oauth, module: "oauth", as: :oauth do
+    resources :device_authorizations, only: :create
+    resources :tokens, only: :create
+    resources :revocations, only: :create
+    resource :device_verification, only: %i[ show create update destroy ]
+  end
+
   get "join/:join_code", to: "users#new", as: :join
   post "join/:join_code", to: "users#create"
 
@@ -20,6 +27,7 @@ Rails.application.routes.draw do
   end
 
   resources :books, except: %i[ index show ] do
+    resource :manifest, controller: "books/manifests", only: :show
     resource :publication, controller: "books/publications", only: %i[ show edit update ]
     resource :bookmark, controller: "books/bookmarks", only: :show
 

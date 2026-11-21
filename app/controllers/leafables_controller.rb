@@ -13,12 +13,19 @@ class LeafablesController < ApplicationController
   def create
     @leaf = @book.press new_leafable, leaf_params
     position_new_leaf @leaf
+
+    respond_to do |format|
+      format.turbo_stream { render }
+      format.html { head :no_content }
+      format.json { render :show, status: :created }
+    end
   end
 
   def show
     respond_to do |format|
       format.html
       format.md
+      format.json
     end
   end
 
@@ -26,11 +33,16 @@ class LeafablesController < ApplicationController
   end
 
   def update
-    @leaf.edit leafable_params: leafable_params, leaf_params: leaf_params
+    if stale_write?
+      render json: { error: "stale_write", fingerprint: @leaf.fingerprint }, status: :conflict
+    else
+      @leaf.edit leafable_params: leafable_params, leaf_params: leaf_params
 
-    respond_to do |format|
-      format.turbo_stream { render }
-      format.html { head :no_content }
+      respond_to do |format|
+        format.turbo_stream { render }
+        format.html { head :no_content }
+        format.json { render :show }
+      end
     end
   end
 
@@ -40,10 +52,18 @@ class LeafablesController < ApplicationController
     respond_to do |format|
       format.turbo_stream { render }
       format.html { redirect_to book_slug_url(@book) }
+      format.json { head :no_content }
     end
   end
 
   private
+    # A sync client sends the fingerprint its copy is based on; refusing a
+    # mismatch keeps it from clobbering an edit it hasn't seen. Requests
+    # without one (the web editor) keep last-write-wins.
+    def stale_write?
+      params[:base_fingerprint].present? && params[:base_fingerprint] != @leaf.fingerprint
+    end
+
     def leaf_params
       default_leaf_params.merge params.fetch(:leaf, {}).permit(:title)
     end

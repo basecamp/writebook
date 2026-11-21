@@ -14,4 +14,11 @@ class Leaf < ApplicationRecord
   def slug
     title.parameterize.presence || "-"
   end
+
+  # A content-derived identity for sync clients: comparing fingerprints tells
+  # them whether a leaf changed, and sending one back lets the server refuse
+  # a write based on a stale copy.
+  def fingerprint
+    Digest::SHA256.hexdigest "#{title}\0#{leafable.fingerprintable_content}"
+  end
 end
