@@ -13,6 +13,7 @@ class ApiTokenTest < ActiveSupport::TestCase
     assert_nil ApiToken.find_by_raw_token(nil)
     assert_nil ApiToken.find_by_raw_token("")
     assert_nil ApiToken.find_by_raw_token("wb_api_unknown")
+    assert_nil ApiToken.find_by_raw_token(DAVIDS_ACCESS_TOKEN)
 
     assert_equal api_tokens(:kevins), ApiToken.find_by_raw_token(KEVINS_API_TOKEN)
     users(:kevin).update!(active: false)
@@ -35,6 +36,10 @@ class ApiTokenTest < ActiveSupport::TestCase
       travel 30.minutes
       token.record_use
       assert_equal 30.minutes.ago, token.last_used_at
+
+      travel 31.minutes
+      token.record_use
+      assert_equal Time.current, token.last_used_at
     end
   end
 end

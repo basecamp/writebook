@@ -42,6 +42,18 @@ class Users::ApiTokensControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to edit_user_profile_url(users(:kevin))
   end
 
+  test "a bearer token can't create or revoke tokens, so none outlives it" do
+    sign_out
+
+    assert_no_difference -> { ApiToken.count } do
+      post user_api_tokens_path(users(:david)), params: { api_token: { name: "Forever" } }, headers: bearer_headers
+      assert_response :forbidden
+
+      delete user_api_token_path(users(:kevin), api_tokens(:kevins)), headers: bearer_headers(KEVINS_API_TOKEN)
+      assert_response :forbidden
+    end
+  end
+
   test "users can't create or revoke someone else's tokens" do
     sign_in :david
 

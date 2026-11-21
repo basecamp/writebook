@@ -18,7 +18,7 @@ module Authentication
 
     def allow_unauthenticated_access(**options)
       skip_before_action :require_authentication, **options
-      before_action :restore_authentication, **options
+      before_action :resume_authentication, **options
     end
 
     # Read-only API tokens are refused everywhere except the reading actions
@@ -36,6 +36,13 @@ module Authentication
 
     def require_authentication
       restore_authentication || request_authentication
+    end
+
+    # Pages anyone may read still answer 401 to a bearer token that doesn't
+    # authenticate, so a revoked or mistyped token fails loudly instead of
+    # quietly reading as an anonymous visitor.
+    def resume_authentication
+      restore_authentication || (request_token_authentication if bearer_token.present?)
     end
 
     def restore_authentication

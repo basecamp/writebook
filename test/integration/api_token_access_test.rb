@@ -34,6 +34,12 @@ class ApiTokenAccessTest < ActionDispatch::IntegrationTest
     assert_equal [ leaves(:summary_page).id ], response.parsed_body["results"].map { it["id"] }
   end
 
+  test "answers HEAD requests like GETs" do
+    head book_manifest_path(books(:handbook), format: :json), headers: api_headers
+
+    assert_response :success
+  end
+
   test "does not read books its user has no access to" do
     get book_manifest_path(books(:manual), format: :json), headers: api_headers
     assert_response :not_found
@@ -70,6 +76,9 @@ class ApiTokenAccessTest < ActionDispatch::IntegrationTest
       users_path,
       session_transfer_path(users(:kevin).transfer_id),
       oauth_device_verification_path,
+      new_session_path,
+      first_run_path,
+      book_bookmark_path(books(:handbook)),
       edit_book_page_path(books(:handbook), leaves(:welcome_page)),
       new_book_path,
       edit_book_path(books(:handbook))
@@ -77,6 +86,12 @@ class ApiTokenAccessTest < ActionDispatch::IntegrationTest
       get path, headers: api_headers
       assert_response :forbidden, "expected GET #{path} to be refused"
     end
+  end
+
+  test "reads text only: uploads are refused" do
+    get action_text_markdown_upload_path(slug: "anything.png"), headers: api_headers
+
+    assert_response :forbidden
   end
 
   test "can't approve an OAuth device grant" do

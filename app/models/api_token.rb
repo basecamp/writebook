@@ -2,7 +2,8 @@
 # the browser approval of the OAuth device flow. It reads what its user can
 # read and nothing more: it only authenticates GET requests, and only on the
 # actions that opt in with `allow_api_token_access` (books, pages, manifests,
-# search). Everything else answers 403. Revoke one by deleting it.
+# search). Everything else answers 403. It reads text: uploads and images in
+# private books still need a browser session. Revoke one by deleting it.
 class ApiToken < ApplicationRecord
   ACTIVITY_REFRESH_RATE = 1.hour
 
@@ -15,6 +16,8 @@ class ApiToken < ApplicationRecord
 
   attr_accessor :raw_token
 
+  PREFIX = Oauth::TokenGenerator::PREFIXES.fetch(:api_token)
+
   class << self
     def generate!(name:)
       raw_token = Oauth::TokenGenerator.api_token
@@ -24,7 +27,7 @@ class ApiToken < ApplicationRecord
     end
 
     def find_by_raw_token(raw_token)
-      if raw_token.is_a?(String) && raw_token.present?
+      if raw_token.is_a?(String) && raw_token.start_with?(PREFIX)
         joins(:user).merge(User.active).find_by token_digest: Oauth::TokenDigester.digest(raw_token)
       end
     end

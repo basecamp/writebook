@@ -19,7 +19,8 @@
     </ul>
   <% end %>
 
-  <%= form_with scope: :api_token, url: user_api_tokens_path(user), class: "flex align-center gap" do |form| %>
+  <%# The new token is shown once, on the page this POST renders. Turbo only follows redirects after a form submission, so let the browser load it. %>
+  <%= form_with scope: :api_token, url: user_api_tokens_path(user), class: "flex align-center gap", data: { turbo: false } do |form| %>
     <label class="flex align-center gap input input--actor flex-item-grow">
       <%= form.text_field :name, class: "input full-width", placeholder: "Name, e.g. On-call agent", required: true, data: { "1p-ignore": true } %>
       <%= image_tag "login-keys.svg", aria: { hidden: "true" }, size: 30, class: "colorize--black" %>

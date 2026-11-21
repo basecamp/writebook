@@ -1,6 +1,5 @@
 class ActionText::Markdown::UploadsController < ApplicationController
   allow_unauthenticated_access only: :show
-  allow_api_token_access only: :show
 
   before_action :set_record, :ensure_editable, :ensure_file_uploaded, only: :create
   before_action :set_attachment, :ensure_attachment_readable, only: :show
