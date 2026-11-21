@@ -14,11 +14,15 @@ class DeviceSignInTest < ApplicationSystemTestCase
     assert @grant.reload.pending?
 
     check "initiation_confirmed"
+    assert_checked_field "initiation_confirmed"
     click_button "Connect"
 
     assert_text "Device connected"
-    assert_selector "#approval_code", text: /\A[A-Z2-9]{4}-[A-Z2-9]{4}\z/
     assert @grant.reload.approved?
+
+    # Read the code by script rather than through an element handle: the
+    # page swap after a plain form submit can detach a handle mid-call.
+    assert_match(/\A[A-Z2-9]{4}-[A-Z2-9]{4}\z/, evaluate_script("document.getElementById('approval_code').textContent.trim()"))
   end
 
   test "entering a code by hand, then denying it" do
