@@ -1,10 +1,9 @@
 # Device-facing OAuth endpoints. These speak the OAuth protocol to programs,
 # not browsers, so they sit outside ApplicationController: no cookie
-# authentication, no CSRF (clients authenticate per request), no browser
-# guard, and errors render as OAuth JSON error responses.
-class Oauth::BaseController < ActionController::Base
-  skip_forgery_protection
-
+# authentication, no CSRF (clients authenticate per request, and API
+# controllers have no forgery protection to skip), no browser guard, and
+# errors render as OAuth JSON error responses.
+class Oauth::BaseController < ActionController::API
   rate_limit to: 30, within: 1.minute, with: -> { render_rate_limit_exceeded }
 
   before_action :prevent_response_caching
