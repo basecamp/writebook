@@ -23,6 +23,6 @@ module SearchesHelper
 
   private
     def whole_word_matchers(terms)
-      terms.map { |term| /\b#{term}\b/ }
+      terms.map { |term| /\b#{Regexp.escape(term)}\b/ }
     end
 end

@@ -36,7 +36,7 @@ module ActionText::Markdown::Uploads
   extend ActiveSupport::Concern
 
   included do
-    has_many_attached :uploads, dependent: :destroy
+    has_many_attached :uploads
   end
 end
 

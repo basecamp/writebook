@@ -20,6 +20,7 @@ class MarkdownRenderer < Redcarpet::Render::HTML
   end
 
   def image(url, title, alt_text)
+    url, title, alt_text = [ url, title, alt_text ].map { ERB::Util.html_escape_once(it) }
     %(<a title="#{title}" data-action="lightbox#open:prevent" data-lightbox-target="image" data-lightbox-url-value="#{url}?disposition=attachment" href="#{url}"><img src="#{url}" alt="#{alt_text}"></a>)
   end
 

@@ -4,6 +4,7 @@ class FirstRunsControllerTest < ActionDispatch::IntegrationTest
   setup do
     Book.destroy_all
     User.destroy_all
+    Account.destroy_all
   end
 
   test "new" do
@@ -36,6 +37,17 @@ class FirstRunsControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_redirected_to root_url
+  end
+
+  test "create redirects without a new administrator when another first run has already created the account" do
+    Account.create!(name: "Writebook")
+
+    assert_no_difference -> { User.count } do
+      post first_run_path, params: { user: { name: "New Person", email_address: "new@example.com", password: "secret123456" } }
+    end
+
+    assert_redirected_to root_path
+    assert_nil parsed_cookies.signed[:session_token]
   end
 
   private

@@ -30,6 +30,25 @@ class PagesControllerTest < ActionDispatch::IntegrationTest
     assert_select "#test", html: %(<iframe src="http://example.com"></iframe>)
   end
 
+  test "show keeps an approved-provider iframe under a configured allowlist" do
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] = EmbedProvider::DEFAULTS.to_json
+    leaves(:welcome_page).leafable.update!(body: %(<div id="test"><iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe></div>))
+
+    get leafable_path(leaves(:welcome_page))
+
+    assert_select "#test iframe[src=?]", "https://www.youtube.com/embed/dQw4w9WgXcQ"
+  end
+
+  test "show strips an off-allowlist iframe under a configured allowlist" do
+    ENV["WRITEBOOK_EMBED_PROVIDERS"] = EmbedProvider::DEFAULTS.to_json
+    leaves(:welcome_page).leafable.update!(body: %(<div id="test"><iframe src="http://example.com"></iframe></div>))
+
+    get leafable_path(leaves(:welcome_page))
+
+    assert_select "#test", html: ""
+    assert_select "#test iframe", count: 0
+  end
+
   test "show with tables in the markdown" do
     get leafable_path(sample_page_leaf(%(| name | food |\n| ---- | ---- |\n| Kevin | Pizza |)))
 

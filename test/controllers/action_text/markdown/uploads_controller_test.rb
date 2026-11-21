@@ -92,6 +92,23 @@ class ActionText::Markdown::UploadsControllerTest < ActionDispatch::IntegrationT
     assert_response :forbidden
   end
 
+  test "an upload must be a file, not the signed id of another book's file" do
+    books(:manual).cover.attach \
+      io: file_fixture("reading.webp").open, filename: "reading.webp", content_type: "image/webp"
+    cover = books(:manual).cover.blob
+
+    assert_no_changes -> { ActiveStorage::Attachment.count } do
+      post action_text_markdown_uploads_url, params: {
+        record_gid: uploads_signed_id_for(pages(:welcome)),
+        attribute_name: "body",
+        file: cover.signed_id
+      }, as: :xhr
+    end
+
+    assert_response :unprocessable_entity
+    assert_equal [ books(:manual) ], ActiveStorage::Attachment.where(blob: cover).map(&:record)
+  end
+
   test "view attached file" do
     books(:handbook).update! published: true
     attachment = attach_upload_to_welcome_page
@@ -111,6 +128,56 @@ class ActionText::Markdown::UploadsControllerTest < ActionDispatch::IntegrationT
     assert_match "public", @response.headers["Cache-Control"]
   end
 
+  test "a publicly cached redirect doesn't take its host from X-Forwarded-Host" do
+    books(:handbook).update! published: true
+    attachment = attach_upload_to_welcome_page
+
+    reset!
+    get action_text_markdown_upload_path(slug: attachment.slug), headers: { "X-Forwarded-Host" => "attacker.example" }
+
+    assert_response :found
+    assert_match "public", response.headers["Cache-Control"]
+    assert_match %r{\A/rails/active_storage/disk/.*/reading\.webp\z}, response.headers["Location"]
+    assert_not_includes response.headers["Location"], "attacker.example"
+  end
+
+  test "a publicly cached redirect doesn't take its host from the Host header" do
+    books(:handbook).update! published: true
+    attachment = attach_upload_to_welcome_page
+
+    reset!
+    host! "attacker.example"
+    get action_text_markdown_upload_path(slug: attachment.slug)
+
+    assert_response :found
+    assert_match "public", response.headers["Cache-Control"]
+    assert response.headers["Location"].start_with?("/rails/active_storage/disk/")
+  end
+
+  test "a privately cached redirect is path-only too" do
+    books(:handbook).update! published: false
+    attachment = attach_upload_to_welcome_page
+
+    sign_in :jz
+    get action_text_markdown_upload_path(slug: attachment.slug), headers: { "X-Forwarded-Host" => "attacker.example" }
+
+    assert_response :found
+    assert_match "private", response.headers["Cache-Control"]
+    assert response.headers["Location"].start_with?("/rails/active_storage/disk/")
+  end
+
+  test "the path-only redirect serves the attached file" do
+    books(:handbook).update! published: true
+    attachment = attach_upload_to_welcome_page
+
+    reset!
+    get action_text_markdown_upload_path(slug: attachment.slug)
+    get response.headers["Location"]
+
+    assert_response :success
+    assert_equal file_fixture("reading.webp").binread, response.body
+  end
+
   test "an attachment of an unpublished book is not served to anonymous clients" do
     books(:handbook).update! published: false
     attachment = attach_upload_to_welcome_page
@@ -127,6 +194,21 @@ class ActionText::Markdown::UploadsControllerTest < ActionDispatch::IntegrationT
 
     accesses(:kevin_handbook).destroy!
     get action_text_markdown_upload_url(slug: attachment.slug)
+
+    assert_response :not_found
+  end
+
+  test "an attachment whose owning book can't be resolved is not served" do
+    books(:handbook).update! published: false
+    attachment = attach_upload_to_welcome_page
+
+    # Sever the leaf without cascading the destroy, leaving the attachment live but
+    # its owning book unresolvable. The guard must fail closed on the nil book.
+    pages(:welcome).leaf.delete
+    assert_nil pages(:welcome).reload.owning_book
+
+    reset!
+    get action_text_markdown_upload_path(slug: attachment.slug)
 
     assert_response :not_found
   end
