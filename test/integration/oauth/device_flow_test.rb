@@ -87,6 +87,16 @@ class Oauth::DeviceFlowTest < ActionDispatch::IntegrationTest
     assert_oauth_error :authorization_pending
   end
 
+  test "an unticked confirmation box does not approve" do
+    device_code = requested_device_code
+    grant = Oauth::DeviceGrant.find_by_raw_device_code(device_code)
+
+    sign_in :david
+    patch oauth_device_verification_url, params: { user_code: grant.user_code, initiation_confirmed: "0" }
+    assert_response :success
+    assert grant.reload.pending?
+  end
+
   test "verification requires signing in first" do
     get oauth_device_verification_url
     assert_redirected_to new_session_url

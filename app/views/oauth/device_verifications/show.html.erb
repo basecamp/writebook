@@ -9,7 +9,7 @@
     <p class="txt-negative"><%= @error %></p>
   <% end %>
 
-  <%= form_with url: oauth_device_verification_url, class: "flex flex-column gap" do |form| %>
+  <%= form_with url: oauth_device_verification_url, class: "flex flex-column gap", data: { turbo: false } do |form| %>
     <label class="flex align-center gap input input--actor txt-large">
       <%= form.text_field :user_code, required: true, class: "input full-width txt-align-center", autofocus: true,
             autocomplete: "off", autocapitalize: "characters", spellcheck: false, placeholder: "XXXX-XXXX", maxlength: 9 %>
