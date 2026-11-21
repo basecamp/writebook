@@ -98,6 +98,57 @@ class Oauth::DeviceFlowTest < ActionDispatch::IntegrationTest
     assert_response :unprocessable_entity
   end
 
+  test "a device without a browser finishes with the approval code it was shown" do
+    device_code = requested_device_code
+    grant = Oauth::DeviceGrant.find_by_raw_device_code(device_code)
+
+    sign_in :david
+    patch oauth_device_verification_url, params: { user_code: grant.user_code, initiation_confirmed: "1" }
+    assert_response :success
+    approval_code = css_select("#approval_code").text.strip
+    assert_match(/\A[A-Z2-9]{4}-[A-Z2-9]{4}\z/, approval_code)
+
+    finish device_code, approval_code.downcase.delete("-")
+    assert_response :success
+    assert_match(/\Awb_at_/, response.parsed_body["access_token"])
+
+    finish device_code, approval_code
+    assert_oauth_error :invalid_grant
+  end
+
+  test "a wrong approval code is refused, and the right one still works" do
+    device_code = requested_device_code
+    grant = Oauth::DeviceGrant.find_by_raw_device_code(device_code)
+
+    sign_in :david
+    patch oauth_device_verification_url, params: { user_code: grant.user_code, initiation_confirmed: "1" }
+    approval_code = css_select("#approval_code").text.strip
+
+    finish device_code, "AAAA-AAAA"
+    assert_oauth_error :invalid_grant
+
+    finish device_code, approval_code
+    assert_response :success
+  end
+
+  test "an approval code does nothing before approval, after denial or after expiry" do
+    device_code = requested_device_code
+    grant = Oauth::DeviceGrant.find_by_raw_device_code(device_code)
+
+    finish device_code, "AAAA-AAAA"
+    assert_oauth_error :invalid_grant
+
+    sign_in :david
+    delete oauth_device_verification_url, params: { user_code: grant.user_code }
+
+    finish device_code, "AAAA-AAAA"
+    assert_oauth_error :access_denied
+
+    travel 11.minutes
+    finish device_code, "AAAA-AAAA"
+    assert_oauth_error :expired_token
+  end
+
   test "an unknown client cannot start the flow" do
     post oauth_device_authorizations_url, params: { client_id: "somebody-else" }
     assert_response :unauthorized
@@ -115,6 +166,15 @@ class Oauth::DeviceFlowTest < ActionDispatch::IntegrationTest
         client_id: Oauth::CLIENT_ID,
         grant_type: Oauth::DEVICE_CODE_GRANT_TYPE,
         device_code: device_code
+      }
+    end
+
+    def finish(device_code, approval_code)
+      post oauth_tokens_url, params: {
+        client_id: Oauth::CLIENT_ID,
+        grant_type: Oauth::DEVICE_CODE_GRANT_TYPE,
+        device_code: device_code,
+        approval_code: approval_code
       }
     end
 
