@@ -1,5 +1,6 @@
 class BooksController < ApplicationController
   allow_unauthenticated_access only: %i[ index show ]
+  allow_api_token_access only: %i[ index show ]
 
   before_action :ensure_index_is_not_empty, only: :index
   before_action :set_book, only: %i[ show edit update destroy ]
@@ -8,6 +9,11 @@ class BooksController < ApplicationController
 
   def index
     @books = Book.accessable_or_published.ordered
+
+    respond_to do |format|
+      format.html
+      format.json
+    end
   end
 
   def new

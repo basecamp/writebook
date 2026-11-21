@@ -6,7 +6,8 @@ module Oauth::TokenGenerator
   PREFIXES = {
     access_token: "wb_at_",
     refresh_token: "wb_rt_",
-    device_code: "wb_dc_"
+    device_code: "wb_dc_",
+    api_token: "wb_api_"
   }.freeze
 
   TOKEN_BYTES = 32
@@ -21,6 +22,10 @@ module Oauth::TokenGenerator
 
   def device_code
     generate :device_code
+  end
+
+  def api_token
+    generate :api_token
   end
 
   private

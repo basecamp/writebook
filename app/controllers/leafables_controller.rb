@@ -1,5 +1,6 @@
 class LeafablesController < ApplicationController
   allow_unauthenticated_access only: :show
+  allow_api_token_access only: :show
 
   include SetBookLeaf
 

@@ -5,6 +5,7 @@ module OauthTestHelper
   JASONS_ACCESS_TOKEN = "wb_at_#{"j" * 64}"
   JASONS_REFRESH_TOKEN = "wb_rt_#{"j" * 64}"
   JZS_ACCESS_TOKEN = "wb_at_#{"z" * 64}"
+  KEVINS_API_TOKEN = "wb_api_#{"k" * 64}"
 
   def bearer_headers(token = DAVIDS_ACCESS_TOKEN)
     { "Authorization" => "Bearer #{token}" }

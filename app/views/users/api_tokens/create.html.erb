@@ -1,0 +1,24 @@
+<% content_for(:title) { "New API token" } %>
+
+<% content_for :header do %>
+  <nav>
+    <%= link_to edit_user_profile_path(@user), class: "btn" do %>
+      <%= image_tag "arrow-left.svg", aria: { hidden: true }, size: 24 %>
+      <span class="for-screen-reader">Back to your settings</span>
+    <% end %>
+  </nav>
+<% end %>
+
+<div class="panel margin-block-double shadow center flex flex-column align-center gap txt-medium--responsive">
+  <label class="flex flex-column gap full-width">
+    <strong id="api_token_label" class="txt-align-start"><%= @api_token.name %>: copy this token now, it won't be shown again</strong>
+    <input type="text" class="input fill-white" id="api_token" value="<%= @api_token.raw_token %>" aria-labelledby="api_token_label" readonly>
+  </label>
+
+  <p class="txt-align-start margin-none">Send it as <code>Authorization: Bearer &lt;token&gt;</code>. It reads books, pages and search, and is refused on everything else.</p>
+
+  <%= button_to_copy_to_clipboard(@api_token.raw_token) do %>
+    <%= image_tag "copy-paste.svg", aria: { hidden: "true" }, size: 24, class: "colorize--black" %>
+    <span class="for-screen-reader">Copy token</span>
+  <% end %>
+</div>
