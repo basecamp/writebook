@@ -10,6 +10,12 @@ module SearchesHelper
     sanitize(html, tags: %w[mark], attributes: [])
   end
 
+  # The same FTS5 output as plain text, for JSON clients: no markup at all,
+  # entities decoded.
+  def search_result_text(html)
+    CGI.unescapeHTML strip_tags(html.to_s)
+  end
+
   def highlight_searched_content(leaf, content, query)
     if query.present?
       terms = leaf.matches_for_highlight(query)

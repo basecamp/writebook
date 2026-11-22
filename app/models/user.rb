@@ -2,6 +2,7 @@ class User < ApplicationRecord
   include Role, Transferable
 
   has_many :sessions, dependent: :destroy
+  has_many :api_tokens, dependent: :destroy
   has_secure_password validations: false
 
   has_many :accesses, dependent: :destroy
@@ -20,6 +21,7 @@ class User < ApplicationRecord
   def deactivate
     transaction do
       sessions.delete_all
+      api_tokens.delete_all
       update! active: false, email_address: deactived_email_address
     end
   end

@@ -26,7 +26,9 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :books, except: %i[ index show ] do
+  resource :search, only: :show
+
+  resources :books, except: :show do
     resource :manifest, controller: "books/manifests", only: :show
     resource :publication, controller: "books/publications", only: %i[ show edit update ]
     resource :bookmark, controller: "books/bookmarks", only: :show
@@ -36,7 +38,7 @@ Rails.application.routes.draw do
         resources :moves, only: :create
       end
 
-      resource :search
+      resource :search, only: %i[ show create ]
     end
 
     resources :sections
@@ -65,6 +67,7 @@ Rails.application.routes.draw do
   resources :users do
     scope module: "users" do
       resource :profile
+      resources :api_tokens, only: %i[ create destroy ]
     end
   end
 

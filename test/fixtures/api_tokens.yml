@@ -1,0 +1,4 @@
+kevins:
+  user: kevin
+  name: On-call agent
+  token_digest: <%= Oauth::TokenDigester.digest("wb_api_#{"k" * 64}") %>

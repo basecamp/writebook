@@ -34,6 +34,38 @@ class BooksControllerTest < ActionDispatch::IntegrationTest
     assert_select "h2", text: "Manual"
   end
 
+  test "index lists the readable books as JSON, with links to read and search them" do
+    books(:manual).update!(published: true)
+
+    get books_path(format: :json)
+
+    assert_response :success
+    assert_equal %w[ Handbook Manual ], response.parsed_body.map { it["title"] }
+
+    handbook = response.parsed_body.first
+    assert_equal books(:handbook).id, handbook["id"]
+    assert_equal book_slug_url(books(:handbook), format: :md), handbook["markdown_url"]
+    assert_equal book_manifest_url(books(:handbook), format: :json), handbook["manifest_url"]
+    assert_equal book_search_url(books(:handbook), format: :json), handbook["search_url"]
+  end
+
+  test "index JSON answers an empty list when nobody is signed in and nothing is published" do
+    sign_out
+
+    get books_path(format: :json)
+
+    assert_response :success
+    assert_equal [], response.parsed_body
+  end
+
+  test "index JSON leaves out books the user can't read" do
+    sign_in :kevin
+
+    get books_path(format: :json)
+
+    assert_equal %w[ Handbook ], response.parsed_body.map { it["title"] }
+  end
+
   test "index redirects to login if not signed in and no published books exist" do
     sign_out
     get root_url

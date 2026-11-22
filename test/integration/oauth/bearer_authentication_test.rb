@@ -13,6 +13,16 @@ class Oauth::BearerAuthenticationTest < ActionDispatch::IntegrationTest
     assert_equal 'Bearer error="invalid_token"', response.headers["WWW-Authenticate"]
   end
 
+  test "an invalid bearer token answers 401 on pages anyone may read, too" do
+    books(:handbook).update!(published: true)
+
+    get book_slug_path(books(:handbook)), headers: bearer_headers("wb_at_nonsense")
+    assert_response :unauthorized
+
+    get book_slug_path(books(:handbook))
+    assert_response :success
+  end
+
   test "expired and revoked tokens are rejected" do
     get root_url, headers: bearer_headers(DAVIDS_EXPIRED_ACCESS_TOKEN)
     assert_response :unauthorized

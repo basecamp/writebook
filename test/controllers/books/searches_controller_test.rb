@@ -27,6 +27,19 @@ class Books::SearchesControllerTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
+  test "show answers JSON for one book" do
+    get book_search_path(books(:handbook), format: :json, q: "Thanks")
+
+    assert_response :success
+    assert_equal [ leaves(:summary_page).id ], response.parsed_body["results"].map { it["id"] }
+  end
+
+  test "show is JSON only" do
+    get book_search_path(books(:handbook), q: "Thanks")
+
+    assert_response :not_acceptable
+  end
+
   test "create shows when there are no matches" do
     post book_search_url(books(:handbook)), params: { search: "the invisible man" }
 

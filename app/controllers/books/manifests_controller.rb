@@ -2,6 +2,8 @@
 # book metadata plus every active leaf with its position and fingerprint —
 # without downloading any content.
 class Books::ManifestsController < ApplicationController
+  allow_api_token_access only: :show
+
   include BookScoped
 
   def show
