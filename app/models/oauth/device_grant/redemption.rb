@@ -3,9 +3,18 @@
 module Oauth::DeviceGrant::Redemption
   # Judge a token-endpoint poll, raising in RFC 8628 §3.5 order. Returns
   # quietly only when the grant is approved and ready to redeem.
-  def judge_poll!
+  #
+  # A request carrying the approval code the user was shown isn't a poll: it
+  # needs no interval, and it succeeds only once that code matches. Guessing
+  # it gains nothing, since whoever holds the device code could just poll.
+  def judge_poll!(approval_code: nil)
     if expired?
       raise Oauth::Error.expired_token
+    end
+
+    if approval_code.present?
+      judge_approval_code!(approval_code)
+      return
     end
 
     if polled_too_fast?
@@ -36,6 +45,16 @@ module Oauth::DeviceGrant::Redemption
   end
 
   private
+    def judge_approval_code!(approval_code)
+      if denied?
+        raise Oauth::Error.access_denied("The user denied the authorization request")
+      end
+
+      unless approved? && approval_code_matches?(approval_code)
+        raise Oauth::Error.invalid_grant("That approval code doesn't match. Check the code Writebook showed and try again")
+      end
+    end
+
     # UPDATE WHERE consumed_at IS NULL, so a device code can never be
     # redeemed twice.
     def consume!

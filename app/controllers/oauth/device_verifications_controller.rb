@@ -33,9 +33,10 @@ class Oauth::DeviceVerificationsController < ApplicationController
     # RFC 8628 §5.4: a device code doesn't authenticate the program that
     # requested it — anyone can start a device flow and lure a signed-in user
     # to its verification link. Approval requires the user's explicit
-    # affirmation that they initiated this sign-in. Denial stays
+    # affirmation that they initiated this sign-in: the ticked box sends "1",
+    # and the unticked one still sends its hidden "0". Denial stays
     # affirmation-free: declining is always safe.
-    elsif params[:initiation_confirmed].blank?
+    elsif params[:initiation_confirmed] != "1"
       @error = "To connect, confirm that you requested this code."
       render :confirm
     elsif @grant.approve!(Current.user)

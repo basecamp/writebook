@@ -20,7 +20,7 @@ class Oauth::TokensController < Oauth::BaseController
         raise Oauth::Error.invalid_grant("Invalid device code")
       end
 
-      grant.judge_poll!
+      grant.judge_poll! approval_code: params[:approval_code].presence
       access_token, refresh_token = grant.redeem!
 
       render json: token_response(access_token, refresh_token)

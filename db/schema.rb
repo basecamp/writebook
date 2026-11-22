@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_11_21_000000) do
+ActiveRecord::Schema[8.0].define(version: 2026_11_21_220000) do
   create_table "accesses", force: :cascade do |t|
     t.integer "user_id", null: false
     t.integer "book_id", null: false
@@ -134,6 +134,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_21_000000) do
     t.datetime "expires_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "approval_code_digest"
     t.index ["device_code_digest"], name: "index_oauth_device_grants_on_device_code_digest", unique: true
     t.index ["user_code"], name: "index_oauth_device_grants_on_user_code", unique: true
   end
