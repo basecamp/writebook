@@ -3,7 +3,8 @@
 # read and nothing more: it only authenticates GET requests, and only on the
 # actions that opt in with `allow_api_token_access` (books, pages, manifests,
 # search). Everything else answers 403. It reads text: uploads and images in
-# private books still need a browser session. Revoke one by deleting it.
+# private books still need a browser session or an OAuth access token. Revoke
+# one by deleting it.
 class ApiToken < ApplicationRecord
   ACTIVITY_REFRESH_RATE = 1.hour
 

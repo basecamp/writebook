@@ -80,6 +80,63 @@ class ActiveStorageAuthorizationTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
+  test "an unpublished book's images are served to a reader's OAuth access token" do
+    books(:handbook).update! published: false
+    cover = attach_cover
+
+    get rails_blob_path(cover), headers: bearer_headers(JZS_ACCESS_TOKEN)
+    assert_response :redirect
+
+    get disk_path_for(cover), headers: bearer_headers(JZS_ACCESS_TOKEN)
+    assert_response :success
+    assert_equal file_fixture("reading.webp").binread, response.body
+  end
+
+  test "a reader whose access is revoked can't load an unpublished book's images with their access token" do
+    books(:handbook).update! published: false
+    cover = attach_cover
+
+    accesses(:jz_handbook).destroy!
+    get disk_path_for(cover), headers: bearer_headers(JZS_ACCESS_TOKEN)
+
+    assert_response :not_found
+  end
+
+  test "a deactivated reader can't load an unpublished book's images with their access token" do
+    books(:handbook).update! published: false
+    cover = attach_cover
+    redirect_path, disk_path = rails_blob_path(cover), disk_path_for(cover)
+
+    users(:jz).deactivate
+
+    get redirect_path, headers: bearer_headers(JZS_ACCESS_TOKEN)
+    assert_response :not_found
+
+    get disk_path, headers: bearer_headers(JZS_ACCESS_TOKEN)
+    assert_response :not_found
+  end
+
+  test "expired access tokens and read-only API tokens don't load an unpublished book's images" do
+    books(:handbook).update! published: false
+    cover = attach_cover
+
+    get disk_path_for(cover), headers: bearer_headers(DAVIDS_EXPIRED_ACCESS_TOKEN)
+    assert_response :not_found
+
+    get disk_path_for(cover), headers: bearer_headers(KEVINS_API_TOKEN)
+    assert_response :not_found
+  end
+
+  test "a bearer token doesn't fall back to the browser session" do
+    books(:handbook).update! published: false
+    cover = attach_cover
+
+    sign_in :jz
+    get disk_path_for(cover), headers: bearer_headers("wb_at_#{"x" * 64}")
+
+    assert_response :not_found
+  end
+
   test "a published book's images are not left in shared caches" do
     cover = attach_cover
 

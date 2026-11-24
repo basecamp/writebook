@@ -28,7 +28,7 @@ class Oauth::AccessToken < ApplicationRecord
 
     def find_active_by_raw_token(raw_token)
       if token = find_by_raw_token(raw_token)
-        token if token.active?
+        token if token.active? && token.user.active?
       end
     end
   end
