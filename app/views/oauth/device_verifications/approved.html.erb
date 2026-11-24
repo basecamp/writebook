@@ -1,0 +1,15 @@
+<% content_for(:title) { "Device connected" } %>
+
+<div class="panel shadow center margin-block-double">
+  <h1 class="margin-block-end">Device connected</h1>
+
+  <% if @grant.formatted_approval_code %>
+    <p>If your terminal asks for a code, enter this one:</p>
+
+    <p class="txt-large txt-align-center"><strong id="approval_code"><%= @grant.formatted_approval_code %></strong></p>
+
+    <p>Otherwise you can close this window and return to your terminal.</p>
+  <% else %>
+    <p>You can close this window and return to your terminal.</p>
+  <% end %>
+</div>

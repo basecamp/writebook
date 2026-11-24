@@ -1,0 +1,11 @@
+davids:
+  user: david
+  token_digest: <%= Oauth::TokenDigester.digest("wb_rt_#{"d" * 64}") %>
+  family_id: davids-cli-family
+  expires_at: <%= 30.days.from_now %>
+
+jasons:
+  user: jason
+  token_digest: <%= Oauth::TokenDigester.digest("wb_rt_#{"j" * 64}") %>
+  family_id: jasons-cli-family
+  expires_at: <%= 30.days.from_now %>

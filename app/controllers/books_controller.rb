@@ -1,13 +1,19 @@
 class BooksController < ApplicationController
   allow_unauthenticated_access only: %i[ index show ]
+  allow_api_token_access only: %i[ index show ]
 
-  before_action :ensure_index_is_not_empty, only: :index
+  before_action :ensure_index_is_not_empty, only: :index, unless: -> { request.format.json? }
   before_action :set_book, only: %i[ show edit update destroy ]
   before_action :set_users, only: %i[ new edit ]
   before_action :ensure_editable, only: %i[ edit update destroy ]
 
   def index
     @books = Book.accessable_or_published.ordered
+
+    respond_to do |format|
+      format.html
+      format.json
+    end
   end
 
   def new
@@ -34,11 +40,16 @@ class BooksController < ApplicationController
   end
 
   def update
-    @book.update(book_params)
-    update_accesses(@book)
+    @book.update(book_params) if params[:book].present?
     remove_cover if params[:remove_cover] == "true"
 
-    redirect_to book_slug_url(@book)
+    respond_to do |format|
+      format.html do
+        update_accesses(@book)
+        redirect_to book_slug_url(@book)
+      end
+      format.json { render json: { id: @book.id, fingerprint: @book.fingerprint } }
+    end
   end
 
   def destroy

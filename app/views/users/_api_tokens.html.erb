@@ -1,0 +1,33 @@
+<div class="flex flex-column gap txt-medium--responsive">
+  <strong class="txt-align-start">Read-only API tokens</strong>
+  <p class="txt-align-start margin-none">For scripts and agents: a token reads the books you can read, and can't change anything.</p>
+
+  <% if user.api_tokens.any? %>
+    <ul role="list" class="flex flex-column gap">
+      <% user.api_tokens.ordered.each do |api_token| %>
+        <li class="flex align-center gap justify-space-between">
+          <span class="txt-align-start">
+            <%= api_token.name %>
+            <small>created <%= time_ago_in_words(api_token.created_at) %> ago, <%= api_token.last_used_at ? "last used #{time_ago_in_words(api_token.last_used_at)} ago" : "never used" %></small>
+          </span>
+          <%= button_to user_api_token_path(user, api_token), method: :delete, class: "btn", data: { turbo_confirm: "Revoke #{api_token.name}? Anything using it stops working." } do %>
+            <%= image_tag "trash.svg", aria: { hidden: true }, size: 24 %>
+            <span class="for-screen-reader">Revoke <%= api_token.name %></span>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+
+  <%# The new token is shown once, on the page this POST renders. Turbo only follows redirects after a form submission, so let the browser load it. %>
+  <%= form_with scope: :api_token, url: user_api_tokens_path(user), class: "flex align-center gap", data: { turbo: false } do |form| %>
+    <label class="flex align-center gap input input--actor flex-item-grow">
+      <%= form.text_field :name, class: "input full-width", placeholder: "Name, e.g. On-call agent", required: true, data: { "1p-ignore": true } %>
+      <%= image_tag "login-keys.svg", aria: { hidden: "true" }, size: 30, class: "colorize--black" %>
+    </label>
+    <button type="submit" class="btn">
+      <%= image_tag "add.svg", aria: { hidden: true }, size: 24 %>
+      <span class="for-screen-reader">Create a read-only API token</span>
+    </button>
+  <% end %>
+</div>
