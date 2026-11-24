@@ -1,6 +1,6 @@
 module ActiveStorageAuthorization
   extend ActiveSupport::Concern
-  include Authentication::SessionLookup
+  include Authentication::SessionLookup, Authentication::TokenLookup
 
   private
     # A blob is as readable as the book it belongs to. Resolve that book on every
@@ -16,8 +16,18 @@ module ActiveStorageAuthorization
     end
 
     def readable?(blob)
-      user = find_session_by_cookie&.user
-      blob.present? && owning_books_of(blob).any? { it.published? || it.accessable?(user: user) }
+      blob.present? && owning_books_of(blob).any? { it.published? || it.accessable?(user: reader) }
+    end
+
+    # A browser session, or the OAuth access token the CLI signs in with, so a
+    # checkout can download the cover and images of a private book. Read-only
+    # API tokens read text only and open no images.
+    def reader
+      if bearer_token.present?
+        find_access_token_by_header&.user
+      else
+        find_session_by_cookie&.user
+      end
     end
 
     def owning_books_of(blob)
