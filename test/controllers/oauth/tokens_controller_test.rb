@@ -46,6 +46,14 @@ class Oauth::TokensControllerTest < ActionDispatch::IntegrationTest
     assert_equal "invalid_grant", response.parsed_body["error"]
   end
 
+  test "a deactivated user's refresh token is rejected" do
+    users(:david).deactivate
+
+    refresh
+    assert_response :bad_request
+    assert_equal "invalid_grant", response.parsed_body["error"]
+  end
+
   test "unknown grant types are rejected" do
     post oauth_tokens_url, params: { client_id: Oauth::CLIENT_ID, grant_type: "authorization_code" }
     assert_response :bad_request

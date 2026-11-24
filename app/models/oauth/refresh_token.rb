@@ -31,7 +31,7 @@ class Oauth::RefreshToken < ApplicationRecord
     end
 
     # Look up a token presented to the token endpoint and verify it, in
-    # order: unknown token, expiry, revocation. A rotated token that has
+    # order: unknown token, expiry, revocation, deactivated user. A rotated token that has
     # since expired still reaches rotate!'s reuse adjudication — presenting
     # it is the same theft signal as presenting it fresh, and must revoke
     # the family rather than answer as a mere expiry.
@@ -48,6 +48,10 @@ class Oauth::RefreshToken < ApplicationRecord
 
       if refresh_token.revoked?
         raise Oauth::Error.invalid_grant("Token has been revoked")
+      end
+
+      if !refresh_token.user.active?
+        raise Oauth::Error.invalid_grant("User has been deactivated")
       end
 
       refresh_token

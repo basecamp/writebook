@@ -102,6 +102,20 @@ class ActiveStorageAuthorizationTest < ActionDispatch::IntegrationTest
     assert_response :not_found
   end
 
+  test "a deactivated reader can't load an unpublished book's images with their access token" do
+    books(:handbook).update! published: false
+    cover = attach_cover
+    redirect_path, disk_path = rails_blob_path(cover), disk_path_for(cover)
+
+    users(:jz).deactivate
+
+    get redirect_path, headers: bearer_headers(JZS_ACCESS_TOKEN)
+    assert_response :not_found
+
+    get disk_path, headers: bearer_headers(JZS_ACCESS_TOKEN)
+    assert_response :not_found
+  end
+
   test "expired access tokens and read-only API tokens don't load an unpublished book's images" do
     books(:handbook).update! published: false
     cover = attach_cover
