@@ -6,7 +6,7 @@
   <% if @grant.formatted_approval_code %>
     <p>If your terminal asks for a code, enter this one:</p>
 
-    <p class="txt-large txt-align-center"><strong id="approval_code"><%= @grant.formatted_approval_code %></strong></p>
+    <p class="txt-align-center"><strong id="approval_code" class="device-code"><%= @grant.formatted_approval_code %></strong></p>
 
     <p>Otherwise you can close this window and return to your terminal.</p>
   <% else %>

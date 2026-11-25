@@ -3,7 +3,7 @@ module Authentication
   include SessionLookup, TokenLookup
 
   included do
-    before_action :refuse_api_token_access
+    before_action :refuse_read_only_token_access
     before_action :require_authentication
     helper_method :signed_in?
 
@@ -21,11 +21,12 @@ module Authentication
       before_action :resume_authentication, **options
     end
 
-    # Read-only API tokens are refused everywhere except the reading actions
-    # that opt in here. Opting in is per action, never for a whole controller
-    # of writes, and the token still only authenticates GET requests.
-    def allow_api_token_access(**options)
-      skip_before_action :refuse_api_token_access, **options
+    # Read-only tokens (API tokens and read-only OAuth access tokens) are
+    # refused everywhere except the reading actions that opt in here. Opting in
+    # is per action, never for a whole controller of writes, and the token
+    # still only authenticates GET requests.
+    def allow_read_only_token_access(**options)
+      skip_before_action :refuse_read_only_token_access, **options
     end
   end
 
@@ -65,11 +66,17 @@ module Authentication
     end
 
     def resume_token_access
+      if read_request? || !find_read_only_token_by_header
+        resume_token
+      end
+    end
+
+    def resume_token
       if access_token = find_access_token_by_header
         access_token.record_use
         Current.user = access_token.user
         set_authenticated_by(:oauth_token)
-      elsif read_request? && api_token = find_api_token_by_header
+      elsif api_token = find_api_token_by_header
         api_token.record_use
         Current.user = api_token.user
         set_authenticated_by(:api_token)
@@ -79,9 +86,9 @@ module Authentication
     # Pages a reader shouldn't reach with a read-only token (settings with
     # sign-in links, the OAuth approval page, and every write) answer 403, so
     # the token can never be turned into a session or a full-access token.
-    def refuse_api_token_access
-      if bearer_token.present? && find_api_token_by_header
-        request_api_token_access
+    def refuse_read_only_token_access
+      if bearer_token.present? && find_read_only_token_by_header
+        request_full_access
       end
     end
 
@@ -90,15 +97,15 @@ module Authentication
     end
 
     def request_token_authentication
-      if read_request? || !find_api_token_by_header
+      if read_request? || !find_read_only_token_by_header
         response.headers["WWW-Authenticate"] = 'Bearer error="invalid_token"'
         head :unauthorized
       else
-        request_api_token_access
+        request_full_access
       end
     end
 
-    def request_api_token_access
+    def request_full_access
       response.headers["WWW-Authenticate"] = 'Bearer error="insufficient_scope"'
       head :forbidden
     end

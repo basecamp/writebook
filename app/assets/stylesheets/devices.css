@@ -1,0 +1,81 @@
+/* Codes a person reads on one screen and types on another, set like Fizzy's:
+   heavy monospace, spaced so each character stands apart. */
+.device-code {
+  font-family: var(--font-mono);
+  font-size: clamp(1.2rem, 6vw, 2.2rem);
+  font-weight: 900;
+  letter-spacing: 1ch;
+  white-space: nowrap;
+
+  /* Room above and below sets the code apart from the text around it. The
+     spacing trails the last character too, so the same amount at the start
+     keeps it centered. */
+  &:where(:not(input)) {
+    display: block;
+    margin-block: 0.75em;
+    padding-inline-start: 1ch;
+  }
+
+  /* Tighter in a field, so it fits beside the padding on a phone. */
+  &:where(input) {
+    letter-spacing: 0.6ch;
+    text-indent: 0.6ch;
+  }
+}
+
+/* A checkbox the person has to tick, with the whole row to click. */
+.confirmation {
+  align-items: center;
+  border: 1px solid var(--color-subtle-dark);
+  border-radius: 0.8em;
+  cursor: pointer;
+  display: flex;
+  gap: 0.75em;
+  padding: 0.7em 1em;
+  text-align: start;
+  transition: border-color 150ms ease;
+
+  &:has(:checked) {
+    border-color: var(--color-ink);
+  }
+
+  input[type=checkbox] {
+    appearance: none;
+    background-color: transparent;
+    block-size: 1.3em;
+    border: 2px solid var(--color-subtle-dark);
+    border-radius: 0.35em;
+    cursor: pointer;
+    display: grid;
+    flex-shrink: 0;
+    inline-size: 1.3em;
+    margin: 0;
+    place-content: center;
+    transition: background-color 150ms ease, border-color 150ms ease;
+
+    &::before {
+      background-color: var(--color-ink-reversed);
+      block-size: 0.75em;
+      clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0, 43% 62%);
+      content: "";
+      inline-size: 0.75em;
+      scale: 0;
+      transition: scale 150ms ease;
+    }
+
+    &:checked {
+      background-color: var(--color-ink);
+      border-color: var(--color-ink);
+
+      &::before {
+        scale: 1;
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &, input[type=checkbox], input[type=checkbox]::before {
+      transition: none;
+    }
+  }
+}

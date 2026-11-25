@@ -39,7 +39,7 @@ module Oauth::DeviceGrant::Redemption
         raise Oauth::Error.invalid_grant("Device code has already been used")
       end
 
-      refresh_token = Oauth::RefreshToken.generate!(user: user)
+      refresh_token = Oauth::RefreshToken.generate!(user: user, scope: scope)
       [ refresh_token.issue_access_token!, refresh_token ]
     end
   end

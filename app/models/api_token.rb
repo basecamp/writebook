@@ -1,7 +1,7 @@
 # A long-lived, read-only token for scripts and agents that can't take part in
 # the browser approval of the OAuth device flow. It reads what its user can
 # read and nothing more: it only authenticates GET requests, and only on the
-# actions that opt in with `allow_api_token_access` (books, pages, manifests,
+# actions that opt in with `allow_read_only_token_access` (books, pages, manifests,
 # search). Everything else answers 403. It reads text: uploads and images in
 # private books still need a browser session or an OAuth access token. Revoke
 # one by deleting it.

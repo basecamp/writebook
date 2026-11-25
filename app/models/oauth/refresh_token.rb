@@ -2,7 +2,7 @@
 # Tokens minted from one another share a family_id, so detected theft can
 # revoke the whole lineage at once.
 class Oauth::RefreshToken < ApplicationRecord
-  include Rotation
+  include Oauth::Scoped, Rotation
 
   EXPIRES_IN = 90.days
 
@@ -16,10 +16,10 @@ class Oauth::RefreshToken < ApplicationRecord
   attr_accessor :raw_token
 
   class << self
-    def generate!(user:, family_id: nil)
+    def generate!(user:, scope:, family_id: nil)
       raw_token = Oauth::TokenGenerator.refresh_token
 
-      create!(user: user, family_id: family_id || SecureRandom.uuid,
+      create!(user: user, scope: scope, family_id: family_id || SecureRandom.uuid,
         token_digest: Oauth::TokenDigester.digest(raw_token), expires_at: EXPIRES_IN.from_now)
           .tap { it.raw_token = raw_token }
     end
@@ -59,7 +59,7 @@ class Oauth::RefreshToken < ApplicationRecord
   end
 
   def issue_access_token!
-    Oauth::AccessToken.generate! user: user, refresh_token: self
+    Oauth::AccessToken.generate! user: user, scope: scope, refresh_token: self
   end
 
   def expired?

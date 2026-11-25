@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_11_21_230000) do
+ActiveRecord::Schema[8.2].define(version: 2026_11_25_120000) do
   create_table "accesses", force: :cascade do |t|
     t.integer "user_id", null: false
     t.integer "book_id", null: false
@@ -130,6 +130,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_21_230000) do
     t.datetime "expires_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "scope", default: "read write", null: false
     t.index ["refresh_token_id"], name: "index_oauth_access_tokens_on_refresh_token_id"
     t.index ["token_digest"], name: "index_oauth_access_tokens_on_token_digest", unique: true
     t.index ["user_id"], name: "index_oauth_access_tokens_on_user_id"
@@ -146,6 +147,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_21_230000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "approval_code_digest"
+    t.string "scope", default: "read write", null: false
     t.index ["device_code_digest"], name: "index_oauth_device_grants_on_device_code_digest", unique: true
     t.index ["user_code"], name: "index_oauth_device_grants_on_user_code", unique: true
   end
@@ -161,6 +163,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_11_21_230000) do
     t.datetime "expires_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "scope", default: "read write", null: false
     t.index ["family_id"], name: "index_oauth_refresh_tokens_on_family_id"
     t.index ["token_digest"], name: "index_oauth_refresh_tokens_on_token_digest", unique: true
     t.index ["user_id"], name: "index_oauth_refresh_tokens_on_user_id"

@@ -3,7 +3,7 @@
 # Books::SearchesController.
 class SearchesController < ApplicationController
   allow_unauthenticated_access
-  allow_api_token_access only: :show
+  allow_read_only_token_access only: :show
 
   def show
     @leaves = Leaf.active.where(book: Book.accessable_or_published).search(params[:q]).favoring_title.includes(:book).limit(50)

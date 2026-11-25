@@ -9,3 +9,10 @@ jasons:
   token_digest: <%= Oauth::TokenDigester.digest("wb_rt_#{"j" * 64}") %>
   family_id: jasons-cli-family
   expires_at: <%= 30.days.from_now %>
+
+kevins_read_only:
+  user: kevin
+  scope: read
+  token_digest: <%= Oauth::TokenDigester.digest("wb_rt_#{"r" * 64}") %>
+  family_id: kevins-cli-family
+  expires_at: <%= 30.days.from_now %>

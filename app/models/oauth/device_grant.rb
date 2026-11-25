@@ -11,7 +11,7 @@
 # browser (or one that can't wait and poll) works too: it prints the link,
 # the user approves anywhere, and enters the code they're shown.
 class Oauth::DeviceGrant < ApplicationRecord
-  include Redemption
+  include Redemption, Oauth::Scoped
 
   EXPIRES_IN = 10.minutes
   POLLING_INTERVAL = 5.seconds
@@ -29,11 +29,11 @@ class Oauth::DeviceGrant < ApplicationRecord
   attr_accessor :raw_device_code, :raw_approval_code
 
   class << self
-    def generate!
+    def generate!(scope: Oauth::Scoped::FULL)
       raw_device_code = Oauth::TokenGenerator.device_code
 
       create!(device_code_digest: Oauth::TokenDigester.digest(raw_device_code),
-        user_code: generate_code, expires_at: EXPIRES_IN.from_now)
+        user_code: generate_code, expires_at: EXPIRES_IN.from_now, scope: scope)
           .tap { it.raw_device_code = raw_device_code }
     end
 

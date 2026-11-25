@@ -33,6 +33,7 @@ class Oauth::DeviceFlowTest < ActionDispatch::IntegrationTest
     assert_match(/\Awb_at_/, tokens["access_token"])
     assert_match(/\Awb_rt_/, tokens["refresh_token"])
     assert_equal "Bearer", tokens["token_type"]
+    assert_equal "read write", tokens["scope"]
 
     get root_url, headers: { "Authorization" => "Bearer #{tokens["access_token"]}" }
     assert_response :success
@@ -157,6 +158,67 @@ class Oauth::DeviceFlowTest < ActionDispatch::IntegrationTest
     travel 11.minutes
     finish device_code, "AAAA-AAAA"
     assert_oauth_error :expired_token
+  end
+
+  test "a device asking to read only gets a read-only token by polling" do
+    post oauth_device_authorizations_url, params: { client_id: Oauth::CLIENT_ID, scope: "read" }
+    assert_response :success
+    device_code = response.parsed_body["device_code"]
+    grant = Oauth::DeviceGrant.find_by_raw_device_code(device_code)
+
+    sign_in :david
+    get oauth_device_verification_url(user_code: grant.user_code)
+    assert_select "p", text: /will be able to read, but not change/
+
+    patch oauth_device_verification_url, params: { user_code: grant.user_code, initiation_confirmed: "1" }
+    poll device_code
+    assert_response :success
+    tokens = response.parsed_body
+    assert_equal "read", tokens["scope"]
+    assert Oauth::AccessToken.find_by_raw_token(tokens["access_token"]).read_only?
+    assert Oauth::RefreshToken.find_by_raw_token(tokens["refresh_token"]).read_only?
+
+    get books_url(format: :json), headers: bearer_headers(tokens["access_token"])
+    assert_response :success
+
+    post books_url, params: { book: { title: "Nope" } }, headers: bearer_headers(tokens["access_token"])
+    assert_response :forbidden
+  end
+
+  test "a device asking to read only gets a read-only token with the approval code" do
+    post oauth_device_authorizations_url, params: { client_id: Oauth::CLIENT_ID, scope: "read" }
+    device_code = response.parsed_body["device_code"]
+    grant = Oauth::DeviceGrant.find_by_raw_device_code(device_code)
+
+    sign_in :david
+    patch oauth_device_verification_url, params: { user_code: grant.user_code, initiation_confirmed: "1" }
+
+    finish device_code, css_select("#approval_code").text.strip
+    assert_response :success
+    assert_equal "read", response.parsed_body["scope"]
+    assert Oauth::AccessToken.find_by_raw_token(response.parsed_body["access_token"]).read_only?
+  end
+
+  test "asking for read and write, or for nothing, gets full access" do
+    [ "read write", "write", "" ].each do |scope|
+      post oauth_device_authorizations_url, params: { client_id: Oauth::CLIENT_ID, scope: scope }
+      assert_response :success
+      assert_not Oauth::DeviceGrant.find_by_raw_device_code(response.parsed_body["device_code"]).read_only?
+    end
+
+    sign_in :david
+    get oauth_device_verification_url(user_code: Oauth::DeviceGrant.last.user_code)
+    assert_select "p", text: /will get full access/
+  end
+
+  test "an unknown or malformed scope is refused" do
+    [ "read admin", "read\twrite", "\t", "read  write", " read" ].each do |scope|
+      assert_no_difference -> { Oauth::DeviceGrant.count } do
+        post oauth_device_authorizations_url, params: { client_id: Oauth::CLIENT_ID, scope: scope }
+      end
+
+      assert_oauth_error :invalid_scope
+    end
   end
 
   test "an unknown client cannot start the flow" do

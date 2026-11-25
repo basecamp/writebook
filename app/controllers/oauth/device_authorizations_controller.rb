@@ -1,11 +1,12 @@
 # RFC 8628 §3.1-3.2: a CLI requests a device code and user code pair here,
 # displays the user code, and polls the token endpoint while the user
-# approves at the verification URL.
+# approves at the verification URL. Asking for scope "read" gets a read-only
+# token; asking for nothing gets full access.
 class Oauth::DeviceAuthorizationsController < Oauth::BaseController
   before_action :require_recognized_client
 
   def create
-    grant = Oauth::DeviceGrant.generate!
+    grant = Oauth::DeviceGrant.generate!(scope: Oauth::DeviceGrant.normalize_scope(params[:scope]))
 
     render json: {
       device_code: grant.raw_device_code,
