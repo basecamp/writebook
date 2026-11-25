@@ -21,17 +21,20 @@ class SyncApiTest < ActionDispatch::IntegrationTest
 
     get book_manifest_url(books(:handbook), format: :json), headers: bearer_headers(JZS_ACCESS_TOKEN)
     assert_equal false, response.parsed_body["book"]["editable"]
+
+    get book_manifest_url(books(:handbook), format: :json), headers: bearer_headers(KEVINS_READ_ONLY_ACCESS_TOKEN)
+    assert_equal false, response.parsed_body["book"]["editable"]
   end
 
   test "the manifest has word counts and plain-text previews of the leaves" do
-    leaves(:welcome_section).leafable.update!(body: "Start   here.\nIt gets better.")
+    leaves(:welcome_section).leafable.update!(body: "Start   <b>here</b> &amp; now.\nIt gets better.")
     leaves(:summary_page).leafable.update!(body: "# The end\n\n<b>Thanks</b> for " + "reading " * 100)
 
     get book_manifest_url(books(:handbook), format: :json), headers: bearer_headers
 
     section, welcome, summary, picture = response.parsed_body["leaves"]
     assert_nil section["word_count"]
-    assert_equal "Start here. It gets better.", section["preview"]
+    assert_equal "Start here & now. It gets better.", section["preview"]
     assert_equal 6, welcome["word_count"]
     assert_equal "This is such a great handbook.", welcome["preview"]
     assert_equal 105, summary["word_count"]

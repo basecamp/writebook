@@ -79,6 +79,24 @@ class BooksControllerTest < ActionDispatch::IntegrationTest
     assert_equal [ false ], response.parsed_body.map { it["editable"] }
   end
 
+  test "index JSON marks books as not editable for a read-only token, even an administrator's" do
+    sign_out
+    users(:kevin).administrator!
+
+    [ KEVINS_API_TOKEN, KEVINS_READ_ONLY_ACCESS_TOKEN ].each do |token|
+      get books_path(format: :json), headers: bearer_headers(token)
+
+      assert_response :success
+      assert_equal [ false ], response.parsed_body.map { it["editable"] }
+    end
+
+    get books_path(format: :json), headers: bearer_headers(JZS_ACCESS_TOKEN)
+    assert_equal [ false, false ], response.parsed_body.map { it["editable"] }
+
+    get books_path(format: :json), headers: bearer_headers
+    assert_equal [ true, true ], response.parsed_body.map { it["editable"] }
+  end
+
   test "index JSON answers an empty list when nobody is signed in and nothing is published" do
     sign_out
 
@@ -216,10 +234,10 @@ class BooksControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal({ "id" => nil, "title" => nil, "subtitle" => nil, "author" => nil, "theme" => "blue", "everyone_access" => true, "cover" => nil }, response.parsed_body["book"])
     assert_equal [
-      { "id" => users(:david).id, "name" => "David", "role" => "editor", "administrator" => true, "current" => false },
-      { "id" => users(:jz).id, "name" => "JZ", "role" => "none", "administrator" => false, "current" => false },
-      { "id" => users(:jason).id, "name" => "Jason", "role" => "editor", "administrator" => true, "current" => false },
-      { "id" => users(:kevin).id, "name" => "Kevin", "role" => "editor", "administrator" => false, "current" => true }
+      { "id" => users(:david).id, "name" => "David", "role" => "editor", "can_administer" => true, "current" => false },
+      { "id" => users(:jz).id, "name" => "JZ", "role" => "none", "can_administer" => false, "current" => false },
+      { "id" => users(:jason).id, "name" => "Jason", "role" => "editor", "can_administer" => true, "current" => false },
+      { "id" => users(:kevin).id, "name" => "Kevin", "role" => "editor", "can_administer" => false, "current" => true }
     ], response.parsed_body["users"]
   end
 
@@ -232,7 +250,7 @@ class BooksControllerTest < ActionDispatch::IntegrationTest
     assert_response :success
     assert_equal({
       "id" => books(:handbook).id, "title" => "Handbook", "subtitle" => "For everyone", "author" => "37signals", "theme" => "green", "everyone_access" => false,
-      "cover" => { "checksum" => books(:handbook).cover.blob.checksum, "url" => rails_blob_path(books(:handbook).cover) }
+      "cover" => { "checksum" => books(:handbook).cover.blob.checksum, "filename" => "reading.webp", "url" => rails_blob_path(books(:handbook).cover) }
     }, response.parsed_body["book"])
     assert_equal %w[ editor reader editor editor ], response.parsed_body["users"].map { it["role"] }
     assert_equal [ users(:kevin).id ], response.parsed_body["users"].select { it["current"] }.map { it["id"] }
@@ -267,6 +285,26 @@ class BooksControllerTest < ActionDispatch::IntegrationTest
     assert_equal({ users(:jason) => "editor", users(:jz) => "editor", users(:kevin) => "reader" }, book.accesses.to_h { [ it.user, it.level ] })
   end
 
+  test "create JSON refuses a book without a title" do
+    assert_no_difference -> { Book.count } do
+      post books_path(format: :json), params: { book: { title: " " } }, as: :json
+      assert_response :unprocessable_entity
+      assert_equal [ "Title can't be blank" ], response.parsed_body["errors"]
+
+      post books_path(format: :json), params: { book: { subtitle: "Only a subtitle" } }, as: :json
+      assert_response :unprocessable_entity
+      assert_equal [ "Title can't be blank" ], response.parsed_body["errors"]
+    end
+  end
+
+  test "update JSON refuses a blank title" do
+    patch book_path(books(:handbook), format: :json), params: { book: { title: "" } }, as: :json
+
+    assert_response :unprocessable_entity
+    assert_equal [ "Title can't be blank" ], response.parsed_body["errors"]
+    assert_equal "Handbook", books(:handbook).reload.title
+  end
+
   test "update JSON changes accesses when they're given" do
     books(:handbook).update!(everyone_access: false)
 
@@ -281,13 +319,63 @@ class BooksControllerTest < ActionDispatch::IntegrationTest
     assert_equal({ users(:kevin) => "editor" }, books(:handbook).accesses.reload.to_h { [ it.user, it.level ] })
   end
 
-  test "update JSON leaves accesses alone when none are given" do
-    assert_no_changes -> { books(:handbook).accesses.pluck(:user_id, :level).sort } do
-      patch book_path(books(:handbook), format: :json), params: { book: { title: "Changed", everyone_access: false } }, as: :json
+  test "update JSON needs editors and readers together" do
+    books(:handbook).update!(everyone_access: false)
+
+    assert_no_changes -> { books(:handbook).accesses.reload.pluck(:user_id, :level).sort } do
+      patch book_path(books(:handbook), format: :json), params: { editor_ids: [ users(:jz).id ] }, as: :json
+      assert_response :unprocessable_entity
+      assert_equal [ "Editors and readers must be given together" ], response.parsed_body["errors"]
+
+      patch book_path(books(:handbook), format: :json), params: { book: { title: "Changed" }, reader_ids: [] }, as: :json
+      assert_response :unprocessable_entity
+    end
+
+    assert_equal "Handbook", books(:handbook).reload.title
+  end
+
+  test "update JSON takes a single id for editors and readers" do
+    books(:handbook).update!(everyone_access: false)
+
+    patch book_path(books(:handbook), format: :json), params: { editor_ids: users(:jz).id, reader_ids: users(:david).id }, as: :json
+
+    assert_response :success
+    assert_equal({ users(:david) => "reader", users(:jz) => "editor", users(:kevin) => "editor" }, books(:handbook).accesses.to_h { [ it.user, it.level ] })
+  end
+
+  test "update JSON gives everyone access when everyone access is turned on without ids" do
+    books(:manual).update!(everyone_access: false)
+    sign_in :david
+
+    patch book_path(books(:manual), format: :json), params: { book: { everyone_access: true } }, as: :json
+
+    assert_response :success
+    assert_equal({ users(:david) => "editor", users(:jason) => "editor", users(:jz) => "reader", users(:kevin) => "reader" },
+      books(:manual).accesses.to_h { [ it.user, it.level ] })
+  end
+
+  test "update JSON keeps the accesses when everyone access is turned off without ids" do
+    assert_no_changes -> { books(:handbook).accesses.reload.pluck(:user_id, :level).sort } do
+      patch book_path(books(:handbook), format: :json), params: { book: { everyone_access: false } }, as: :json
     end
 
     assert_response :success
-    assert_equal "Changed", books(:handbook).reload.title
+    assert_not books(:handbook).reload.everyone_access?
+  end
+
+  test "update JSON leaves accesses alone when neither ids nor everyone access are given, as writebook push does" do
+    books(:manual).update!(everyone_access: false)
+    sign_in :david
+
+    assert_no_changes -> { books(:manual).accesses.reload.pluck(:user_id, :level).sort } do
+      patch book_path(books(:manual), format: :json), params: { book: { title: "Changed", subtitle: "New" } }, as: :json
+      assert_response :success
+
+      patch book_path(books(:manual), format: :json), params: { remove_cover: "true" }, as: :json
+      assert_response :success
+    end
+
+    assert_equal "Changed", books(:manual).reload.title
   end
 
   test "destroy redirects for HTML and answers No Content for JSON" do

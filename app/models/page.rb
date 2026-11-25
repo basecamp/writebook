@@ -22,7 +22,11 @@ class Page < ApplicationRecord
   end
 
   def text_preview
-    ActionText::Content.new(html_preview).to_plain_text.squish
+    text_preview_of(html_preview)
+  end
+
+  def word_count
+    markdown_source.split.size
   end
 
   def markable

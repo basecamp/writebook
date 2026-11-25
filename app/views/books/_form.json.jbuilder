@@ -1,27 +1,17 @@
 json.book do
   json.extract! book, :id, :title, :subtitle, :author, :theme, :everyone_access
-
-  if book.cover.attached?
-    json.cover do
-      json.checksum book.cover.blob.checksum
-      json.url rails_blob_path(book.cover)
-    end
-  else
-    json.cover nil
-  end
+  json.partial! "books/cover", book: book
 end
 
 json.users users do |user|
   json.extract! user, :id, :name
 
-  if book.editable?(user: user) || user == creating_user || user.can_administer?
+  if user == creating_user
     json.role "editor"
-  elsif book.accessable?(user: user)
-    json.role "reader"
   else
-    json.role "none"
+    json.role book.role_for(user)
   end
 
-  json.administrator user.can_administer?
+  json.can_administer user.can_administer?
   json.current user.current?
 end

@@ -21,6 +21,10 @@ class User < ApplicationRecord
     self == Current.user
   end
 
+  def editor_of?(book)
+    can_administer? || editor_book_ids.include?(book.id)
+  end
+
   def deactivate
     transaction do
       sessions.delete_all
@@ -30,6 +34,10 @@ class User < ApplicationRecord
   end
 
   private
+    def editor_book_ids
+      @editor_book_ids ||= accesses.editor.pluck(:book_id).to_set
+    end
+
     def deactived_email_address
       email_address&.gsub(/@/, "-deactivated-#{SecureRandom.uuid}@")
     end

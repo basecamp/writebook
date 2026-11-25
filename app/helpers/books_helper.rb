@@ -1,4 +1,8 @@
 module BooksHelper
+  def can_edit?(book)
+    signed_in? && !read_only_token? && Current.user.editor_of?(book)
+  end
+
   def book_toc_tag(book, &)
     tag.ol class: "toc", tabindex: 0,
       data: {
