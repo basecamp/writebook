@@ -3,14 +3,14 @@
 <div class="panel shadow center margin-block-double <%= "shake" if @error %>">
   <h1 class="margin-block-end">Connect this device?</h1>
 
-  <p class="txt-large txt-align-center"><strong><%= @grant.formatted_user_code %></strong></p>
+  <p class="txt-align-center"><strong class="device-code"><%= @grant.formatted_user_code %></strong></p>
 
   <p>
     <% if @grant.read_only? %>
-      A device showing this code will be able to read, but not change, the books
+      A device showing this code will be able to <strong>read, but not change,</strong> the books
       <strong><%= Current.user.name %></strong> can read.
     <% else %>
-      A device showing this code will get full access to Writebook as
+      A device showing this code will get <strong>full access</strong> to Writebook as
       <strong><%= Current.user.name %></strong>.
     <% end %>
   </p>
@@ -19,17 +19,18 @@
     <p class="txt-negative"><%= @error %></p>
   <% end %>
 
-  <%= form_with url: oauth_device_verification_url, method: :patch, class: "flex flex-column gap", data: { turbo: false } do |form| %>
+  <%= form_with url: oauth_device_verification_url, method: :patch, id: "connect_device", data: { turbo: false } do |form| %>
     <%= form.hidden_field :user_code, value: @grant.user_code %>
 
-    <label class="flex align-center gap">
+    <label class="confirmation">
       <%= form.check_box :initiation_confirmed %>
       I requested this code myself
     </label>
-
-    <button type="submit" class="btn btn--reversed center">Connect</button>
   <% end %>
 
-  <%= button_to "Deny", oauth_device_verification_url(user_code: @grant.user_code),
-        method: :delete, class: "btn center margin-block", form: { data: { turbo: false } } %>
+  <div class="flex gap justify-center margin-block">
+    <%= button_to "Deny", oauth_device_verification_url(user_code: @grant.user_code),
+          method: :delete, class: "btn", form: { data: { turbo: false } } %>
+    <button type="submit" form="connect_device" class="btn btn--reversed">Connect</button>
+  </div>
 </div>
