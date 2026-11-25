@@ -165,7 +165,9 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "read-only tokens can't change roles or remove people" do
+  test "read-only tokens can't change roles or remove people, even an administrator's" do
+    users(:kevin).administrator!
+
     [ KEVINS_API_TOKEN, KEVINS_READ_ONLY_ACCESS_TOKEN ].each do |token|
       patch user_url(users(:jz), format: :json), headers: bearer_headers(token), params: { user: { role: "administrator" } }
       assert_response :forbidden
