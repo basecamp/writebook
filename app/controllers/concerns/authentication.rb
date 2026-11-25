@@ -5,7 +5,7 @@ module Authentication
   included do
     before_action :refuse_read_only_token_access
     before_action :require_authentication
-    helper_method :signed_in?
+    helper_method :authenticated_by, :signed_in?
 
     protect_from_forgery with: :exception, unless: -> { authenticated_by.oauth_token? }
   end

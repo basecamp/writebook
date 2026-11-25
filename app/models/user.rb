@@ -9,6 +9,8 @@ class User < ApplicationRecord
   has_many :books, through: :accesses
   has_many :leaves, through: :books
 
+  validates :name, :email_address, presence: true
+
   after_create :grant_access_to_everyone_books
 
   scope :active, -> { where(active: true) }
