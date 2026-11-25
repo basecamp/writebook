@@ -168,7 +168,7 @@ class Oauth::DeviceFlowTest < ActionDispatch::IntegrationTest
 
     sign_in :david
     get oauth_device_verification_url(user_code: grant.user_code)
-    assert_in_body "will be able to read, but not change"
+    assert_select "p", text: /will be able to read, but not change/
 
     patch oauth_device_verification_url, params: { user_code: grant.user_code, initiation_confirmed: "1" }
     poll device_code
@@ -208,15 +208,17 @@ class Oauth::DeviceFlowTest < ActionDispatch::IntegrationTest
 
     sign_in :david
     get oauth_device_verification_url(user_code: Oauth::DeviceGrant.last.user_code)
-    assert_in_body "will get full access"
+    assert_select "p", text: /will get full access/
   end
 
-  test "an unknown scope is refused" do
-    assert_no_difference -> { Oauth::DeviceGrant.count } do
-      post oauth_device_authorizations_url, params: { client_id: Oauth::CLIENT_ID, scope: "read admin" }
-    end
+  test "an unknown or malformed scope is refused" do
+    [ "read admin", "read\twrite", "\t", "read  write", " read" ].each do |scope|
+      assert_no_difference -> { Oauth::DeviceGrant.count } do
+        post oauth_device_authorizations_url, params: { client_id: Oauth::CLIENT_ID, scope: scope }
+      end
 
-    assert_oauth_error :invalid_scope
+      assert_oauth_error :invalid_scope
+    end
   end
 
   test "an unknown client cannot start the flow" do

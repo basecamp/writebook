@@ -12,9 +12,11 @@ module Oauth::Scoped
   end
 
   class_methods do
-    # RFC 6749 §3.3: a space-delimited list. Asking for nothing means full access.
+    # RFC 6749 §3.3: values separated by single spaces, so a tab or a doubled
+    # space is malformed rather than read as a separator. Asking for nothing
+    # means full access.
     def normalize_scope(requested)
-      values = requested.to_s.split
+      values = requested.to_s.split(/ /, -1)
 
       if (values - %w[ read write ]).any?
         raise Oauth::Error.invalid_scope
