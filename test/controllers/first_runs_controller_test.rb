@@ -29,6 +29,15 @@ class FirstRunsControllerTest < ActionDispatch::IntegrationTest
     assert parsed_cookies.signed[:session_token]
   end
 
+  test "create without a password is refused and leaves no account behind" do
+    assert_no_difference -> { User.count } do
+      post first_run_url, params: { user: { name: "New Person", email_address: "new@example.com", password: "" } }
+    end
+
+    assert_response :unprocessable_entity
+    assert Account.none?
+  end
+
   test "create is not permitted when users exist" do
     create_user
 

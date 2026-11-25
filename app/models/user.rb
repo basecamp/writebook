@@ -10,6 +10,7 @@ class User < ApplicationRecord
   has_many :leaves, through: :books
 
   validates :name, :email_address, presence: true
+  validates :password, presence: true, if: -> { new_record? || password_digest_changed? }
 
   after_create :grant_access_to_everyone_books
 

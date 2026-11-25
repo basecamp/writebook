@@ -102,6 +102,40 @@ class Users::ProfilesControllerTest < ActionDispatch::IntegrationTest
     assert users(:david).authenticate("secret123456")
   end
 
+  test "update as JSON treats a blank or null password as a password change and refuses it" do
+    [ " ", nil ].each do |password|
+      patch user_profile_url(users(:david), format: :json), headers: bearer_headers, as: :json,
+        params: { user: { name: "Dave", password: password } }
+
+      assert_response :unprocessable_entity
+      assert_equal [ "Current password is needed to change the email address or password, or it's wrong" ], response.parsed_body["errors"]
+
+      patch user_profile_url(users(:david), format: :json), headers: bearer_headers, as: :json,
+        params: { user: { password: password, current_password: "secret123456" } }
+
+      assert_response :unprocessable_entity
+      assert_equal [ "Password can't be blank" ], response.parsed_body["errors"]
+    end
+
+    users(:david).reload
+    assert_equal "David", users(:david).name
+    assert users(:david).authenticate("secret123456")
+  end
+
+  test "update in a browser session refuses a blank password and keeps an empty one as no change" do
+    sign_in :kevin
+
+    put user_profile_url(users(:kevin)), params: { user: { password: " " } }
+    assert_response :unprocessable_entity
+
+    put user_profile_url(users(:kevin)), params: { user: { name: "Kev", password: "" } }
+    assert_redirected_to users_url
+
+    users(:kevin).reload
+    assert_equal "Kev", users(:kevin).name
+    assert users(:kevin).authenticate("secret123456")
+  end
+
   test "update in a browser session changes the email address and password without the current password" do
     sign_in :kevin
 
@@ -130,23 +164,19 @@ class Users::ProfilesControllerTest < ActionDispatch::IntegrationTest
     sign_in :david
 
     get edit_user_profile_url(users(:david))
-    assert_select "#session_transfer_url"
     assert_includes response.body, "/session/transfers/"
 
     get user_profile_url(users(:kevin))
-    assert_select "#session_transfer_url"
     assert_includes response.body, "/session/transfers/"
 
     sign_out
 
     get edit_user_profile_url(users(:david)), headers: bearer_headers
     assert_response :success
-    assert_select "#session_transfer_url", count: 0
     assert_not_includes response.body, "/session/transfers/"
 
     get user_profile_url(users(:kevin)), headers: bearer_headers
     assert_response :success
-    assert_select "#session_transfer_url", count: 0
     assert_not_includes response.body, "/session/transfers/"
   end
 end

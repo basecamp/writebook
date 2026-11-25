@@ -41,6 +41,15 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_url(email_address: users(:david).email_address)
   end
 
+  test "creating a new user without a password is refused" do
+    assert_no_difference -> { User.count } do
+      post join_url(@join_code), params: { user: { name: "New Person", email_address: "new@example.com", password: "" } }
+    end
+
+    assert_response :unprocessable_entity
+    assert_nil parsed_cookies.signed[:session_token]
+  end
+
   test "update" do
     sign_in :david
     assert users(:david).administrator?

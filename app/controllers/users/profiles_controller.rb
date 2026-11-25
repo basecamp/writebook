@@ -11,22 +11,16 @@ class Users::ProfilesController < ApplicationController
   end
 
   def update
-    respond_to do |format|
-      format.html do
-        @user.update!(user_params)
-        redirect_to users_url
+    if @user.update(user_params)
+      respond_to do |format|
+        format.html { redirect_to users_url }
+        format.json { render :edit }
       end
-
-      format.json do
-        if @user.update(user_params)
-          render :edit
-        else
-          render_errors @user.errors.full_messages
-        end
-      rescue ActiveRecord::RecordNotUnique
-        render_errors [ "Name or email address is already taken" ]
-      end
+    else
+      render_errors @user.errors.full_messages
     end
+  rescue ActiveRecord::RecordNotUnique
+    render_errors [ "Name or email address is already taken" ]
   end
 
   private
@@ -39,7 +33,7 @@ class Users::ProfilesController < ApplicationController
     end
 
     def changes_sign_in?
-      user_params[:password].present? || (user_params.key?(:email_address) && user_params[:email_address] != @user.email_address)
+      user_params.key?(:password) || (user_params.key?(:email_address) && user_params[:email_address] != @user.email_address)
     end
 
     def render_errors(errors)

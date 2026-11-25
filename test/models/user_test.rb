@@ -6,6 +6,20 @@ class UserTest < ActiveSupport::TestCase
     assert users(:david).valid?
   end
 
+  test "a password is required on create and can't be changed to a blank one" do
+    assert_not User.new(name: "Bob", email_address: "bob@example.com", password: "").valid?
+
+    user = users(:david)
+    user.password = " "
+    assert_not user.valid?
+
+    user.password = nil
+    assert_not user.valid?
+
+    users(:kevin).update!(name: "Kev")
+    assert users(:kevin).authenticate("secret123456")
+  end
+
   test "new users get access to everyone books" do
     everyone_book = Book.create!(title: "My new book", everyone_access: true)
     other_book = Book.create!(title: "My secret book", everyone_access: false)
