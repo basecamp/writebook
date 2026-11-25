@@ -110,6 +110,12 @@ module Authentication
       head :forbidden
     end
 
+    # A bearer token, even a full-access OAuth one, must not mint a token or a
+    # sign-in that outlives it, so those are only done from a signed-in browser.
+    def ensure_signed_in_with_a_session
+      head :forbidden unless authenticated_by.session?
+    end
+
     def redirect_signed_in_user_to_root
       redirect_to root_url if signed_in?
     end
