@@ -19,3 +19,10 @@ jzs:
   user: jz
   token_digest: <%= Oauth::TokenDigester.digest("wb_at_#{"z" * 64}") %>
   expires_at: <%= 1.hour.from_now %>
+
+kevins_read_only:
+  user: kevin
+  refresh_token: kevins_read_only
+  scope: read
+  token_digest: <%= Oauth::TokenDigester.digest("wb_at_#{"r" * 64}") %>
+  expires_at: <%= 1.hour.from_now %>

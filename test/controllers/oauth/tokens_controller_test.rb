@@ -10,6 +10,7 @@ class Oauth::TokensControllerTest < ActionDispatch::IntegrationTest
     assert_match(/\Awb_rt_/, tokens["refresh_token"])
     assert_not_equal DAVIDS_REFRESH_TOKEN, tokens["refresh_token"]
 
+    assert_equal "read write", tokens["scope"]
     assert oauth_refresh_tokens(:davids).reload.rotated?
     assert_equal oauth_refresh_tokens(:davids).family_id,
       Oauth::RefreshToken.find_by_raw_token(tokens["refresh_token"]).family_id
@@ -36,6 +37,17 @@ class Oauth::TokensControllerTest < ActionDispatch::IntegrationTest
 
     assert Oauth::RefreshToken.find_by_raw_token(successor_raw_token).revoked?
     assert oauth_access_tokens(:davids).reload.revoked?
+  end
+
+  test "refreshing a read-only token keeps it read-only, even when asked for more" do
+    post oauth_tokens_url, params: { client_id: Oauth::CLIENT_ID, grant_type: "refresh_token",
+      refresh_token: KEVINS_READ_ONLY_REFRESH_TOKEN, scope: "read write" }
+    assert_response :success
+
+    tokens = response.parsed_body
+    assert_equal "read", tokens["scope"]
+    assert Oauth::AccessToken.find_by_raw_token(tokens["access_token"]).read_only?
+    assert Oauth::RefreshToken.find_by_raw_token(tokens["refresh_token"]).read_only?
   end
 
   test "an expired refresh token is rejected" do

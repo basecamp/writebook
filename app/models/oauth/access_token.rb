@@ -1,4 +1,6 @@
 class Oauth::AccessToken < ApplicationRecord
+  include Oauth::Scoped
+
   EXPIRES_IN = 1.hour
   ACTIVITY_REFRESH_RATE = 1.hour
 
@@ -12,10 +14,10 @@ class Oauth::AccessToken < ApplicationRecord
   attr_accessor :raw_token
 
   class << self
-    def generate!(user:, refresh_token: nil)
+    def generate!(user:, scope:, refresh_token: nil)
       raw_token = Oauth::TokenGenerator.access_token
 
-      create!(user: user, refresh_token: refresh_token,
+      create!(user: user, scope: scope, refresh_token: refresh_token,
         token_digest: Oauth::TokenDigester.digest(raw_token), expires_at: EXPIRES_IN.from_now)
           .tap { it.raw_token = raw_token }
     end

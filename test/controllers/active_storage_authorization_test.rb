@@ -92,6 +92,28 @@ class ActiveStorageAuthorizationTest < ActionDispatch::IntegrationTest
     assert_equal file_fixture("reading.webp").binread, response.body
   end
 
+  test "an unpublished book's images and uploads are served to a reader's read-only access token, but not their API token" do
+    books(:handbook).update! published: false
+    cover = attach_cover
+    upload = attach_upload_to_welcome_page
+
+    get rails_blob_path(cover), headers: bearer_headers(KEVINS_READ_ONLY_ACCESS_TOKEN)
+    assert_response :redirect
+
+    get disk_path_for(cover), headers: bearer_headers(KEVINS_READ_ONLY_ACCESS_TOKEN)
+    assert_response :success
+    assert_equal file_fixture("reading.webp").binread, response.body
+
+    get action_text_markdown_upload_path(slug: upload.slug), headers: bearer_headers(KEVINS_READ_ONLY_ACCESS_TOKEN)
+    assert_response :redirect
+
+    get response.location, headers: bearer_headers(KEVINS_READ_ONLY_ACCESS_TOKEN)
+    assert_response :success
+
+    get action_text_markdown_upload_path(slug: upload.slug), headers: bearer_headers(KEVINS_API_TOKEN)
+    assert_response :forbidden
+  end
+
   test "a reader whose access is revoked can't load an unpublished book's images with their access token" do
     books(:handbook).update! published: false
     cover = attach_cover

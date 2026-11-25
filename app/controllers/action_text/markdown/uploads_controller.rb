@@ -1,8 +1,9 @@
 class ActionText::Markdown::UploadsController < ApplicationController
   allow_unauthenticated_access only: :show
+  allow_read_only_token_access only: :show
 
   before_action :set_record, :ensure_editable, :ensure_file_uploaded, only: :create
-  before_action :set_attachment, :ensure_attachment_readable, only: :show
+  before_action :refuse_api_token_access, :set_attachment, :ensure_attachment_readable, only: :show
 
   def create
     @markdown = @record.safe_markdown_attribute params[:attribute_name]
@@ -42,6 +43,14 @@ class ActionText::Markdown::UploadsController < ApplicationController
 
     def ensure_file_uploaded
       head :unprocessable_entity unless uploaded_file?(params[:file])
+    end
+
+    # API tokens read text only. A read-only OAuth token downloads uploads too,
+    # so the CLI can clone a private book with its images.
+    def refuse_api_token_access
+      if find_api_token_by_header
+        request_full_access
+      end
     end
 
     def set_attachment

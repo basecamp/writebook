@@ -29,7 +29,7 @@ module Oauth::RefreshToken::Rotation
 
   private
     def rotate_freshly!
-      successor = self.class.generate!(user: user, family_id: family_id)
+      successor = self.class.generate!(user: user, scope: scope, family_id: family_id)
 
       if rotate_to?(successor)
         successor

@@ -38,7 +38,8 @@ class Oauth::TokensController < Oauth::BaseController
         access_token: access_token.raw_token,
         token_type: "Bearer",
         expires_in: Oauth::AccessToken::EXPIRES_IN.to_i,
-        refresh_token: refresh_token.raw_token
+        refresh_token: refresh_token.raw_token,
+        scope: access_token.scope
       }
     end
 end

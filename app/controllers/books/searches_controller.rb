@@ -1,6 +1,6 @@
 class Books::SearchesController < ApplicationController
   allow_unauthenticated_access
-  allow_api_token_access only: :show
+  allow_read_only_token_access only: :show
 
   include BookScoped
 

@@ -1,6 +1,6 @@
 class BooksController < ApplicationController
   allow_unauthenticated_access only: %i[ index show ]
-  allow_api_token_access only: %i[ index show ]
+  allow_read_only_token_access only: %i[ index show ]
 
   before_action :ensure_index_is_not_empty, only: :index, unless: -> { request.format.json? }
   before_action :set_book, only: %i[ show edit update destroy ]

@@ -6,8 +6,13 @@
   <p class="txt-large txt-align-center"><strong><%= @grant.formatted_user_code %></strong></p>
 
   <p>
-    A device showing this code will get full access to Writebook as
-    <strong><%= Current.user.name %></strong>.
+    <% if @grant.read_only? %>
+      A device showing this code will be able to read, but not change, the books
+      <strong><%= Current.user.name %></strong> can read.
+    <% else %>
+      A device showing this code will get full access to Writebook as
+      <strong><%= Current.user.name %></strong>.
+    <% end %>
   </p>
 
   <% if @error %>

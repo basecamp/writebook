@@ -19,9 +19,9 @@ module ActiveStorageAuthorization
       blob.present? && owning_books_of(blob).any? { it.published? || it.accessable?(user: reader) }
     end
 
-    # A browser session, or the OAuth access token the CLI signs in with, so a
-    # checkout can download the cover and images of a private book. Read-only
-    # API tokens read text only and open no images.
+    # A browser session, or the OAuth access token the CLI signs in with (even a
+    # read-only one), so a checkout can download the cover and images of a
+    # private book. API tokens read text only and open no images.
     def reader
       if bearer_token.present?
         find_access_token_by_header&.user

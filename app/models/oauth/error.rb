@@ -8,6 +8,7 @@ class Oauth::Error < StandardError
     invalid_request: :bad_request,
     invalid_client: :unauthorized,
     invalid_grant: :bad_request,
+    invalid_scope: :bad_request,
     unsupported_grant_type: :bad_request,
     access_denied: :bad_request,
     authorization_pending: :bad_request,
@@ -26,6 +27,10 @@ class Oauth::Error < StandardError
 
     def invalid_grant(description = nil)
       new :invalid_grant, description || "The provided authorization grant is invalid, expired, or revoked"
+    end
+
+    def invalid_scope(description = nil)
+      new :invalid_scope, description || "The requested scope is invalid, unknown, or malformed"
     end
 
     def unsupported_grant_type(description = nil)
