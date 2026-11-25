@@ -8,7 +8,7 @@ class BooksController < ApplicationController
   before_action :ensure_editable, only: %i[ edit update destroy ]
 
   def index
-    @books = Book.accessable_or_published.ordered
+    @books = Book.accessable_or_published.with_attached_cover.ordered
 
     respond_to do |format|
       format.html
@@ -24,7 +24,10 @@ class BooksController < ApplicationController
     book = Book.create! book_params
     update_accesses(book)
 
-    redirect_to book_slug_url(book)
+    respond_to do |format|
+      format.html { redirect_to book_slug_url(book) }
+      format.json { render json: { id: book.id, slug: book.slug, url: book_slug_url(book), fingerprint: book.fingerprint }, status: :created }
+    end
   end
 
   def show
@@ -48,14 +51,20 @@ class BooksController < ApplicationController
         update_accesses(@book)
         redirect_to book_slug_url(@book)
       end
-      format.json { render json: { id: @book.id, fingerprint: @book.fingerprint } }
+      format.json do
+        update_accesses(@book) if accesses_given?
+        render json: { id: @book.id, fingerprint: @book.fingerprint }
+      end
     end
   end
 
   def destroy
     @book.destroy
 
-    redirect_to root_url
+    respond_to do |format|
+      format.html { redirect_to root_url }
+      format.json { head :no_content }
+    end
   end
 
   private
@@ -86,6 +95,10 @@ class BooksController < ApplicationController
       readers = [ Current.user.id, *params[:reader_ids]&.map(&:to_i) ]
 
       book.update_access(editors: editors, readers: readers)
+    end
+
+    def accesses_given?
+      params.key?(:editor_ids) || params.key?(:reader_ids)
     end
 
     def remove_cover

@@ -21,6 +21,10 @@ class Page < ApplicationRecord
     rendered_html(markdown_source.first(1024))
   end
 
+  def text_preview
+    ActionText::Content.new(html_preview).to_plain_text.squish
+  end
+
   def markable
     body.content.to_s
   end

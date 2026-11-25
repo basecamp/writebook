@@ -7,6 +7,7 @@ json.results @leaves do |leaf|
     json.extract! leaf.book, :id, :title
   end
   json.snippet search_result_text(leaf.content_match)
+  json.marked_snippet sanitize_search_result(leaf.content_match)
   json.url leafable_slug_url(leaf)
   json.markdown_url leafable_slug_url(leaf, format: :md)
 end

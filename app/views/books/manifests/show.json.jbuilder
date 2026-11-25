@@ -1,6 +1,7 @@
 json.book do
   json.extract! @book, :id, :title, :subtitle, :author, :theme, :slug, :published
   json.fingerprint @book.fingerprint
+  json.editable signed_in? && @book.editable?
 
   if @book.cover.attached?
     json.cover do
@@ -19,9 +20,17 @@ json.leaves @leaves do |leaf|
   json.fingerprint leaf.fingerprint
 
   case leaf.leafable
+  when Page
+    json.word_count leaf.leafable.body.content.to_s.split.size
+    json.preview leaf.leafable.text_preview.truncate(280)
   when Section
     json.theme leaf.leafable.theme
+    json.word_count nil
+    json.preview leaf.leafable.body.to_s.squish.truncate(280)
   when Picture
+    json.word_count nil
+    json.preview nil
+
     if leaf.leafable.image.attached?
       json.image do
         json.checksum leaf.leafable.image.blob.checksum
