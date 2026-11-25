@@ -47,7 +47,7 @@ class FirstRunTest < ActiveSupport::TestCase
   end
 
   test "a first run that can't create its administrator leaves no account behind" do
-    assert_raises ActiveRecord::NotNullViolation do
+    assert_raises ActiveRecord::RecordInvalid do
       FirstRun.create!({ name: "User", email_address: "user@example.com", password: "" })
     end
 

@@ -4,7 +4,7 @@ class UsersController < ApplicationController
   before_action :verify_join_code, only: %i[ new create ]
   before_action :ensure_can_administer, only: %i[ update destroy ]
   before_action :set_user, only: %i[ update destroy ]
-
+  before_action :ensure_not_current_user, only: %i[ update destroy ]
 
   def index
     @users = User.active
@@ -24,12 +24,20 @@ class UsersController < ApplicationController
 
   def update
     @user.update(role_params)
-    redirect_to users_url
+
+    respond_to do |format|
+      format.html { redirect_to users_url }
+      format.json
+    end
   end
 
   def destroy
     @user.deactivate
-    redirect_to users_url
+
+    respond_to do |format|
+      format.html { redirect_to users_url }
+      format.json { head :no_content }
+    end
   end
 
   private
@@ -39,6 +47,10 @@ class UsersController < ApplicationController
 
     def set_user
       @user = User.active.find(params[:id])
+    end
+
+    def ensure_not_current_user
+      head :forbidden if @user.current?
     end
 
     def user_params

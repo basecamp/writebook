@@ -51,6 +51,15 @@ class SearchesControllerTest < ActionDispatch::IntegrationTest
     assert_equal "findme Tom & Jerry bold", response.parsed_body["results"].sole["snippet"]
   end
 
+  test "show marks the matched words in a snippet of their own, with no other markup" do
+    pages(:welcome).update! body: "findme Tom & Jerry <b>bold</b>"
+    leaves(:welcome_page).reindex
+
+    get search_path(format: :json, q: "findme")
+
+    assert_equal "<mark>findme</mark> Tom &amp; Jerry bold", response.parsed_body["results"].sole["marked_snippet"]
+  end
+
   test "show finds nothing for an empty or operator-only query" do
     [ "", "OR", "^$" ].each do |query|
       get search_path(format: :json, q: query)

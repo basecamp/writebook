@@ -21,6 +21,14 @@ class Page < ApplicationRecord
     rendered_html(markdown_source.first(1024))
   end
 
+  def text_preview
+    text_preview_of(html_preview)
+  end
+
+  def word_count
+    markdown_source.split.size
+  end
+
   def markable
     body.content.to_s
   end

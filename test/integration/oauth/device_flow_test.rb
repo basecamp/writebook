@@ -98,6 +98,26 @@ class Oauth::DeviceFlowTest < ActionDispatch::IntegrationTest
     assert grant.reload.pending?
   end
 
+  test "a bearer token cannot approve or deny a device sign-in, a browser session can" do
+    device_code = requested_device_code
+    grant = Oauth::DeviceGrant.find_by_raw_device_code(device_code)
+
+    get oauth_device_verification_url(user_code: grant.user_code), headers: bearer_headers
+    assert_response :forbidden
+
+    patch oauth_device_verification_url, params: { user_code: grant.user_code, initiation_confirmed: "1" }, headers: bearer_headers
+    assert_response :forbidden
+
+    delete oauth_device_verification_url, params: { user_code: grant.user_code }, headers: bearer_headers
+    assert_response :forbidden
+    assert grant.reload.pending?
+
+    sign_in :david
+    patch oauth_device_verification_url, params: { user_code: grant.user_code, initiation_confirmed: "1" }
+    assert_response :success
+    assert grant.reload.approved?
+  end
+
   test "verification requires signing in first" do
     get oauth_device_verification_url
     assert_redirected_to new_session_url

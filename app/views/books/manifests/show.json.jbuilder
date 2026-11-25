@@ -1,22 +1,16 @@
 json.book do
   json.extract! @book, :id, :title, :subtitle, :author, :theme, :slug, :published
   json.fingerprint @book.fingerprint
-
-  if @book.cover.attached?
-    json.cover do
-      json.checksum @book.cover.blob.checksum
-      json.filename @book.cover.filename.to_s
-      json.url rails_blob_path(@book.cover)
-    end
-  else
-    json.cover nil
-  end
+  json.editable can_edit?(@book)
+  json.partial! "books/cover", book: @book
 end
 
 json.leaves @leaves do |leaf|
   json.extract! leaf, :id, :title
   json.type leaf.leafable_type
   json.fingerprint leaf.fingerprint
+  json.word_count leaf.leafable.word_count
+  json.preview leaf.leafable.text_preview
 
   case leaf.leafable
   when Section

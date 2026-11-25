@@ -76,6 +76,16 @@ class ReadOnlyTokenAccessTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "can't open the book forms as JSON" do
+    read_only_tokens.each do |token|
+      get new_book_path(format: :json), headers: bearer_headers(token)
+      assert_response :forbidden
+
+      get edit_book_path(books(:handbook), format: :json), headers: bearer_headers(token)
+      assert_response :forbidden
+    end
+  end
+
   test "can't open pages that would turn it into a session or a full-access token" do
     [
       edit_user_profile_path(users(:kevin)),

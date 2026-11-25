@@ -9,6 +9,10 @@ class Section < ApplicationRecord
     body
   end
 
+  def text_preview
+    text_preview_of(body.to_s)
+  end
+
   def fingerprintable_content
     "#{body}\0#{theme}"
   end

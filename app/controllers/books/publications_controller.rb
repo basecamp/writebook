@@ -11,7 +11,11 @@ class Books::PublicationsController < ApplicationController
 
   def update
     @book.update! book_params
-    redirect_to book_slug_url(@book)
+
+    respond_to do |format|
+      format.html { redirect_to book_slug_url(@book) }
+      format.json
+    end
   end
 
   private

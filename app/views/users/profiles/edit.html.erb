@@ -51,9 +51,11 @@
   <% end %>
 </div>
 
-<div class="panel margin-block-double shadow center">
-  <%= render "users/transfer", user: @user %>
-</div>
+<% if authenticated_by.session? %>
+  <div class="panel margin-block-double shadow center">
+    <%= render "users/transfer", user: @user %>
+  </div>
+<% end %>
 
 <div class="panel margin-block-double shadow center">
   <%= render "users/api_tokens", user: @user %>

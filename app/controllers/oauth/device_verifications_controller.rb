@@ -7,6 +7,7 @@ class Oauth::DeviceVerificationsController < ApplicationController
   # for guessing user codes.
   rate_limit to: 30, within: 1.minute, with: -> { render_rate_limit_exceeded }
 
+  before_action :ensure_signed_in_with_a_session
   before_action :set_grant, except: :show
 
   def show

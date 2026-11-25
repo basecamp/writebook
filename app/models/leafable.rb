@@ -22,6 +22,14 @@ module Leafable
     nil
   end
 
+  def word_count
+    nil
+  end
+
+  def text_preview
+    nil
+  end
+
   class_methods do
     def leafable_name
       @leafable_name ||= ActiveModel::Name.new(self).singular.inquiry
@@ -31,4 +39,9 @@ module Leafable
   def leafable_name
     self.class.leafable_name
   end
+
+  private
+    def text_preview_of(html)
+      ActionText::Content.new(html).to_plain_text.squish.truncate(280)
+    end
 end

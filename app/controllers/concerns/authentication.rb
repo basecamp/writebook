@@ -5,7 +5,7 @@ module Authentication
   included do
     before_action :refuse_read_only_token_access
     before_action :require_authentication
-    helper_method :signed_in?
+    helper_method :authenticated_by, :read_only_token?, :signed_in?
 
     protect_from_forgery with: :exception, unless: -> { authenticated_by.oauth_token? }
   end
@@ -87,9 +87,11 @@ module Authentication
     # sign-in links, the OAuth approval page, and every write) answer 403, so
     # the token can never be turned into a session or a full-access token.
     def refuse_read_only_token_access
-      if bearer_token.present? && find_read_only_token_by_header
-        request_full_access
-      end
+      request_full_access if read_only_token?
+    end
+
+    def read_only_token?
+      bearer_token.present? && find_read_only_token_by_header.present?
     end
 
     def read_request?
@@ -108,6 +110,12 @@ module Authentication
     def request_full_access
       response.headers["WWW-Authenticate"] = 'Bearer error="insufficient_scope"'
       head :forbidden
+    end
+
+    # A bearer token, even a full-access OAuth one, must not mint a token or a
+    # sign-in that outlives it, so those are only done from a signed-in browser.
+    def ensure_signed_in_with_a_session
+      head :forbidden unless authenticated_by.session?
     end
 
     def redirect_signed_in_user_to_root

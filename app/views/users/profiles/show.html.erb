@@ -24,7 +24,7 @@
   <h2 class="margin-none-block-end"><%= @user.name %></h2>
   <p class="margin-none-block-start"><%= mail_to @user.email_address %></p>
 
-  <% if Current.user.can_administer? %>
+  <% if Current.user.can_administer? && authenticated_by.session? %>
     <hr class="full-width margin-block-double" aria-hidden="true">
     <%= render "users/transfer", user: @user %>
   <% end %>

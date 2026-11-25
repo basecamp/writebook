@@ -41,6 +41,15 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
     assert_redirected_to new_session_url(email_address: users(:david).email_address)
   end
 
+  test "creating a new user without a password is refused" do
+    assert_no_difference -> { User.count } do
+      post join_url(@join_code), params: { user: { name: "New Person", email_address: "new@example.com", password: "" } }
+    end
+
+    assert_response :unprocessable_entity
+    assert_nil parsed_cookies.signed[:session_token]
+  end
+
   test "update" do
     sign_in :david
     assert users(:david).administrator?
@@ -77,5 +86,97 @@ class UsersControllerTest < ActionDispatch::IntegrationTest
 
     delete user_url(users(:david))
     assert_response :forbidden
+  end
+
+  test "index as JSON for an administrator" do
+    get users_url(format: :json), headers: bearer_headers
+
+    assert_response :success
+    assert_equal join_url(@join_code), response.parsed_body["join_url"]
+    assert response.parsed_body["can_administer"]
+    assert_equal User.active.ids, response.parsed_body["users"].map { it["id"] }
+    assert_equal({ "id" => users(:david).id, "name" => "David", "role" => "administrator", "current" => true },
+      response.parsed_body["users"].find { it["id"] == users(:david).id })
+    assert_equal({ "id" => users(:kevin).id, "name" => "Kevin", "role" => "member", "current" => false },
+      response.parsed_body["users"].find { it["id"] == users(:kevin).id })
+  end
+
+  test "index as JSON for a member shows the join link like the page does, but can't administer" do
+    get users_url(format: :json), headers: bearer_headers(JZS_ACCESS_TOKEN)
+
+    assert_response :success
+    assert_equal join_url(@join_code), response.parsed_body["join_url"]
+    assert_not response.parsed_body["can_administer"]
+    assert_equal [ users(:jz).id ], response.parsed_body["users"].select { it["current"] }.map { it["id"] }
+  end
+
+  test "update as JSON" do
+    patch user_url(users(:kevin), format: :json), headers: bearer_headers, params: { user: { role: "administrator" } }
+
+    assert_response :success
+    assert_equal({ "id" => users(:kevin).id, "name" => "Kevin", "role" => "administrator" }, response.parsed_body)
+    assert users(:kevin).reload.administrator?
+  end
+
+  test "update as JSON is not allowed to non-admins" do
+    patch user_url(users(:kevin), format: :json), headers: bearer_headers(JZS_ACCESS_TOKEN), params: { user: { role: "administrator" } }
+
+    assert_response :forbidden
+    assert_not users(:kevin).reload.administrator?
+  end
+
+  test "nobody can change their own role" do
+    sign_in :david
+    put user_url(users(:david)), params: { user: { role: "member" } }
+    assert_response :forbidden
+
+    patch user_url(users(:david), format: :json), headers: bearer_headers, params: { user: { role: "member" } }
+    assert_response :forbidden
+
+    assert users(:david).reload.administrator?
+  end
+
+  test "destroy as JSON" do
+    assert_difference -> { User.active.count }, -1 do
+      delete user_url(users(:kevin), format: :json), headers: bearer_headers
+    end
+
+    assert_response :no_content
+    assert_not users(:kevin).reload.active?
+  end
+
+  test "destroy as JSON is not allowed to non-admins" do
+    assert_no_difference -> { User.active.count } do
+      delete user_url(users(:kevin), format: :json), headers: bearer_headers(JZS_ACCESS_TOKEN)
+    end
+
+    assert_response :forbidden
+  end
+
+  test "nobody can remove themselves" do
+    sign_in :david
+
+    assert_no_difference -> { User.active.count } do
+      delete user_url(users(:david))
+      assert_response :forbidden
+
+      delete user_url(users(:david), format: :json), headers: bearer_headers
+      assert_response :forbidden
+    end
+  end
+
+  test "read-only tokens can't change roles or remove people, even an administrator's" do
+    users(:kevin).administrator!
+
+    [ KEVINS_API_TOKEN, KEVINS_READ_ONLY_ACCESS_TOKEN ].each do |token|
+      patch user_url(users(:jz), format: :json), headers: bearer_headers(token), params: { user: { role: "administrator" } }
+      assert_response :forbidden
+
+      delete user_url(users(:jz), format: :json), headers: bearer_headers(token)
+      assert_response :forbidden
+    end
+
+    assert users(:jz).reload.member?
+    assert users(:jz).active?
   end
 end
