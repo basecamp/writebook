@@ -53,3 +53,9 @@
 
 # Ignore test files
 /test/
+
+# Agent session state — worktrees under .claude/worktrees/ are whole extra checkouts of this
+# repo, and other .claude entries are local session files. The tracked .claude/CLAUDE.md must
+# survive: Dockerfile-export packages this context into the writebook.zip customers download.
+/.claude/*
+!/.claude/CLAUDE.md
